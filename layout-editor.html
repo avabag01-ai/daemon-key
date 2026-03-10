@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>한글 키보드 배열 편집기</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #12121f;
+    color: #ccc;
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; padding: 16px 10px 40px;
+  }
+
+  h1 { font-size: 13px; color: #555; margin-bottom: 14px; letter-spacing: 1px; }
+
+  /* ── 상단 툴바 ── */
+  #toolbar {
+    display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; justify-content: center;
+  }
+  .btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    border: 1px solid #2a3a5a; background: #1a2440; color: #aaa;
+  }
+  .btn:hover { background: #253560; color: #fff; }
+  .btn.danger { border-color: #5a1a2a; background: #2a1020; color: #c66; }
+  .btn.danger:hover { background: #3a1528; color: #e88; }
+  .btn.primary { border-color: #1a5a3a; background: #102a20; color: #6c6; }
+  .btn.primary:hover { background: #154030; color: #8e8; }
+
+  /* ── 키 그리드 (7열 5행) ── */
+  #grid-wrap {
+    width: 100%; max-width: 560px;
+    background: #16213e; border: 1px solid #1e3060; border-radius: 14px;
+    padding: 12px; margin-bottom: 14px;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
+  .cell {
+    height: 58px;
+    background: #0d1830;
+    border: 1.5px solid #1a2a50;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #889;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.1s, background 0.1s;
+  }
+  .cell:hover { border-color: #3a5a9a; background: #111f40; }
+  .cell.selected {
+    border-color: #e94560 !important;
+    background: #2a0f18 !important;
+    color: #e94560 !important;
+  }
+  .cell.filled { color: #e0e0e0; background: #16213e; border-color: #2a3a6a; }
+  .cell.filled:hover { border-color: #4a6aaa; }
+  .cell .cell-label { font-size: 18px; line-height: 1; }
+  .cell .cell-type {
+    position: absolute; bottom: 3px; right: 4px;
+    font-size: 7px; color: #446; letter-spacing: -0.5px;
+  }
+  /* 특수키 색상 */
+  .cell.t-SPC { background: #0e1a30; color: #556; font-size: 10px; }
+  .cell.t-DEL { background: #1a0e0e; color: #644; font-size: 11px; }
+  .cell.t-empty { opacity: 0.3; }
+
+  /* ── 팔레트 ── */
+  #palette-wrap {
+    width: 100%; max-width: 560px;
+  }
+  .palette-section { margin-bottom: 10px; }
+  .palette-title {
+    font-size: 11px; color: #445; margin-bottom: 6px; padding-left: 2px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .palette-title span { flex: 1; border-bottom: 1px solid #1a2a40; }
+  .palette-row {
+    display: flex; flex-wrap: wrap; gap: 5px;
+  }
+  .pkey {
+    width: 42px; height: 42px;
+    background: #1a2440; border: 1.5px solid #2a3a60;
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #aac; cursor: pointer;
+    transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  }
+  .pkey:hover { background: #253560; border-color: #4a6aaa; transform: scale(1.08); }
+  .pkey.used { opacity: 0.3; pointer-events: none; }
+  .pkey.special-p {
+    font-size: 11px; color: #667; background: #111827; border-color: #1e2b3c;
+    width: 54px;
+  }
+  .pkey.active-p {
+    background: #e94560 !important; border-color: #e94560 !important;
+    color: white !important; transform: scale(1.1);
+  }
+
+  /* ── 선택된 키 정보 ── */
+  #sel-info {
+    width: 100%; max-width: 560px;
+    background: #16213e; border: 1px solid #1e3060; border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 12px;
+    font-size: 12px; color: #556; display: flex; align-items: center; gap: 10px;
+    min-height: 38px;
+  }
+  #sel-info .sel-key { font-size: 22px; color: #e94560; min-width: 28px; }
+  #sel-info .sel-desc { flex: 1; }
+
+  /* ── JSON 출력 ── */
+  #json-out {
+    width: 100%; max-width: 560px;
+    background: #0d1520; border: 1px solid #1a2a40; border-radius: 10px;
+    padding: 10px 12px; font-size: 11px; color: #4a8; font-family: monospace;
+    white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>키보드 배열 편집기 — 7열 × 5행</h1>
+
+<div id="toolbar">
+  <button class="btn" onclick="clearAll()">전체 비우기</button>
+  <button class="btn" onclick="loadPreset('default')">기본 배열</button>
+  <button class="btn" onclick="loadPreset('qwerty')">쿼티식</button>
+  <button class="btn primary" onclick="exportLayout()">JSON 복사</button>
+  <button class="btn primary" onclick="applyToKeyboard()">키보드에 적용</button>
+</div>
+
+<!-- 레이어 탭 -->
+<div id="layer-bar" style="display:flex;gap:6px;margin-bottom:12px;align-items:center;width:100%;max-width:560px;">
+  <span style="font-size:11px;color:#445;margin-right:4px;">레이어:</span>
+  <div id="layer-tabs" style="display:flex;gap:5px;flex:1;flex-wrap:wrap;"></div>
+  <button class="btn" onclick="addLayer()" style="font-size:11px;padding:4px 10px;">+ 추가</button>
+  <button class="btn danger" onclick="removeLayer()" style="font-size:11px;padding:4px 10px;">- 삭제</button>
+</div>
+
+<div id="sel-info">
+  <span class="sel-key" id="sel-key">—</span>
+  <span class="sel-desc" id="sel-desc">그리드 셀을 클릭해서 선택 → 팔레트에서 키 배치</span>
+</div>
+
+<div id="grid-wrap">
+  <div id="grid"></div>
+</div>
+
+<div id="palette-wrap">
+  <div class="palette-section">
+    <div class="palette-title">자음 <span></span></div>
+    <div class="palette-row" id="pal-consonant"></div>
+  </div>
+  <div class="palette-section">
+    <div class="palette-title">모음 <span></span></div>
+    <div class="palette-row" id="pal-vowel"></div>
+  </div>
+  <div class="palette-section">
+    <div class="palette-title">특수 <span></span></div>
+    <div class="palette-row" id="pal-special"></div>
+  </div>
+</div>
+
+<pre id="json-out"></pre>
+
+<script>
+// ============================================================
+// 데이터
+// ============================================================
+const CONSONANTS = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+const VOWELS     = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+
+const ROWS = 5, COLS = 7;
+
+// ── 레이어 관리 ──
+// layers: [ { name, grid[] }, ... ]
+let layers = [
+  { name: '기본', grid: Array(ROWS*COLS).fill(null) },
+];
+let activeLayer = 0;
+
+// 현재 레이어 그리드 참조
+function curGrid() { return layers[activeLayer].grid; }
+
+// 현재 선택된 셀 인덱스
+let selectedCell = null;
+
+// 팔레트에서 선택된 키
+let selectedPKey = null;
+
+// ============================================================
+// 레이어 탭 UI
+// ============================================================
+function renderLayerTabs() {
+  const tabsEl = document.getElementById('layer-tabs');
+  tabsEl.innerHTML = '';
+  layers.forEach((layer, i) => {
+    const tab = document.createElement('div');
+    tab.style.cssText = `
+      padding: 4px 12px; border-radius: 7px; font-size: 12px; cursor: pointer;
+      border: 1px solid; transition: all 0.1s;
+      ${i === activeLayer
+        ? 'background:#1a4a8a;border-color:#4a8aff;color:#fff;'
+        : 'background:#1a2440;border-color:#2a3a60;color:#778;'}
+    `;
+    tab.textContent = layer.name;
+    tab.addEventListener('click', () => { activeLayer = i; selectedCell=null; selectedPKey=null; renderAll(); });
+
+    // 더블클릭으로 이름 수정
+    tab.addEventListener('dblclick', () => {
+      const name = prompt('레이어 이름:', layer.name);
+      if (name) { layers[i].name = name; renderLayerTabs(); }
+    });
+    tabsEl.appendChild(tab);
+  });
+}
+
+function addLayer() {
+  const name = prompt('새 레이어 이름:', `레이어 ${layers.length+1}`);
+  if (!name) return;
+  layers.push({ name, grid: Array(ROWS*COLS).fill(null) });
+  activeLayer = layers.length - 1;
+  renderAll();
+}
+
+function removeLayer() {
+  if (layers.length <= 1) { alert('최소 1개 레이어 필요'); return; }
+  if (!confirm(`"${layers[activeLayer].name}" 삭제?`)) return;
+  layers.splice(activeLayer, 1);
+  activeLayer = Math.min(activeLayer, layers.length - 1);
+  renderAll();
+}
+
+function renderAll() {
+  renderLayerTabs();
+  renderGrid();
+  renderPalette();
+  updateSelInfo();
+}
+
+// ============================================================
+// 프리셋
+// ============================================================
+const PRESETS = {
+  default: [
+    'ㄱ','ㄴ','ㄷ','ㄹ','ㅁ','ㅂ','ㅅ',
+    'ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ',
+    'ㄲ','ㄸ','ㅃ','ㅆ','ㅉ',null,null,
+    null,null,null,null,null,null,null,
+    null,null,null,null,'SPC','SPC','DEL',
+  ],
+  qwerty: [
+    'ㅂ','ㅈ','ㄷ','ㄱ','ㅅ','ㅛ','ㅕ',
+    'ㅁ','ㄴ','ㅇ','ㄹ','ㅎ','ㅗ','ㅓ',
+    'ㅋ','ㅌ','ㅊ','ㅍ','ㅠ','ㅜ','ㅡ',
+    'ㄲ','ㄸ','ㅃ','ㅆ','ㅉ',null,null,
+    null,null,null,null,'SPC','SPC','DEL',
+  ],
+};
+
+// ============================================================
+// 그리드 렌더링
+// ============================================================
+const gridEl = document.getElementById('grid');
+
+function renderGrid() {
+  const grid = curGrid();
+  gridEl.innerHTML = '';
+  grid.forEach((val, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.idx = idx;
+
+    if (val) {
+      cell.classList.add('filled');
+      if (val === 'SPC') { cell.classList.add('t-SPC'); cell.textContent = 'spc'; }
+      else if (val === 'DEL') { cell.classList.add('t-DEL'); cell.textContent = '⌫'; }
+      else if (val === 'SHIFT') { cell.textContent = '⇧'; }
+      else if (val === 'RET') { cell.textContent = '↵'; }
+      else if (val === 'empty') { cell.classList.add('t-empty'); cell.textContent = '·'; }
+      else {
+        const lbl = document.createElement('span');
+        lbl.className = 'cell-label';
+        lbl.textContent = val;
+        cell.appendChild(lbl);
+        // 자음/모음 구분 표시
+        const typ = document.createElement('span');
+        typ.className = 'cell-type';
+        typ.textContent = CONSONANTS.includes(val) ? '자' : '모';
+        cell.appendChild(typ);
+      }
+    }
+
+    if (idx === selectedCell) cell.classList.add('selected');
+
+    cell.addEventListener('click', () => onCellClick(idx));
+    cell.addEventListener('contextmenu', e => { e.preventDefault(); clearCell(idx); });
+    gridEl.appendChild(cell);
+  });
+}
+
+function onCellClick(idx) {
+  if (selectedPKey) {
+    // 팔레트 키 선택 상태 → 이 셀에 배치
+    placeKey(idx, selectedPKey);
+  } else {
+    // 셀 선택
+    selectedCell = idx;
+    updateSelInfo();
+    renderGrid();
+  }
+}
+
+function placeKey(idx, key) {
+  const grid = curGrid();
+  if (!['SPC','DEL','SHIFT','RET','empty'].includes(key)) {
+    grid.forEach((v, i) => { if (v === key) grid[i] = null; });
+  }
+  grid[idx] = key;
+  selectedCell = null;
+  selectedPKey = null;
+  updateSelInfo();
+  renderGrid();
+  renderPalette();
+}
+
+function clearCell(idx) {
+  curGrid()[idx] = null;
+  renderGrid();
+  renderPalette();
+}
+
+function clearAll() {
+  layers[activeLayer].grid = Array(ROWS*COLS).fill(null);
+  selectedCell = null; selectedPKey = null;
+  renderAll();
+}
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  layers[activeLayer].grid = [...p, ...Array(ROWS*COLS - p.length).fill(null)].slice(0, ROWS*COLS);
+  selectedCell = null; selectedPKey = null;
+  renderAll();
+}
+
+// ============================================================
+// 팔레트
+// ============================================================
+function renderPalette() {
+  const usedKeys = new Set(curGrid().filter(Boolean));
+
+  function makePKey(label, displayText, container, type) {
+    const pk = document.createElement('div');
+    pk.className = 'pkey';
+    if (type === 'special') pk.classList.add('special-p');
+    pk.textContent = displayText || label;
+    pk.dataset.key = label;
+    if (usedKeys.has(label) && !['SPC','DEL','SHIFT','RET','empty'].includes(label)) {
+      pk.classList.add('used');
+    }
+    if (label === selectedPKey) pk.classList.add('active-p');
+    pk.addEventListener('click', () => onPKeyClick(label));
+    container.appendChild(pk);
+  }
+
+  const palC = document.getElementById('pal-consonant');
+  const palV = document.getElementById('pal-vowel');
+  const palS = document.getElementById('pal-special');
+  palC.innerHTML = ''; palV.innerHTML = ''; palS.innerHTML = '';
+
+  CONSONANTS.forEach(c => makePKey(c, c, palC, 'consonant'));
+  VOWELS.forEach(v => makePKey(v, v, palV, 'vowel'));
+  [['SPC','space'],['DEL','⌫'],['SHIFT','⇧'],['RET','↵'],['empty','·']].forEach(([k,d]) => {
+    makePKey(k, d, palS, 'special');
+  });
+}
+
+function onPKeyClick(key) {
+  if (selectedPKey === key) {
+    // 토글 해제
+    selectedPKey = null;
+    updateSelInfo();
+    renderPalette();
+    return;
+  }
+
+  selectedPKey = key;
+
+  // 셀이 선택된 상태면 바로 배치
+  if (selectedCell !== null) {
+    placeKey(selectedCell, key);
+    return;
+  }
+
+  updateSelInfo();
+  renderPalette();
+}
+
+// ============================================================
+// 선택 정보 표시
+// ============================================================
+function updateSelInfo() {
+  const keyEl = document.getElementById('sel-key');
+  const descEl = document.getElementById('sel-desc');
+
+  if (selectedPKey) {
+    keyEl.textContent = selectedPKey === 'SPC' ? 'space'
+      : selectedPKey === 'DEL' ? '⌫'
+      : selectedPKey === 'empty' ? '·' : selectedPKey;
+    descEl.textContent = selectedCell !== null
+      ? `셀 ${Math.floor(selectedCell/COLS)+1}행 ${selectedCell%COLS+1}열에 배치됩니다`
+      : '배치할 셀을 클릭하세요 (우클릭 = 셀 비우기)';
+  } else if (selectedCell !== null) {
+    const val = grid[selectedCell];
+    keyEl.textContent = val || '—';
+    descEl.textContent = val
+      ? `${Math.floor(selectedCell/COLS)+1}행 ${selectedCell%COLS+1}열 — 팔레트에서 키 선택 / 우클릭으로 비우기`
+      : `${Math.floor(selectedCell/COLS)+1}행 ${selectedCell%COLS+1}열 (비어있음) — 팔레트에서 키 선택`;
+  } else {
+    keyEl.textContent = '—';
+    descEl.textContent = '그리드 셀을 클릭해서 선택 → 팔레트에서 키 배치';
+  }
+}
+
+// ============================================================
+// JSON 내보내기
+// ============================================================
+function exportLayout() {
+  // 전체 레이어 내보내기
+  const out = layers.map(layer => ({
+    name: layer.name,
+    rows: Array.from({length:ROWS}, (_,r) => layer.grid.slice(r*COLS, r*COLS+COLS))
+  }));
+  const json = JSON.stringify(out, null, 2);
+  document.getElementById('json-out').textContent = json;
+  document.getElementById('json-out').style.display = 'block';
+  navigator.clipboard?.writeText(json).then(() => {
+    const btn = document.querySelector('[onclick="exportLayout()"]');
+    btn.textContent = '✓ 복사됨';
+    setTimeout(() => btn.textContent = 'JSON 복사', 1500);
+  });
+}
+
+// ============================================================
+// 키보드에 적용 (hangul_keyboard.html이 같은 탭/iframe이면)
+// ============================================================
+function applyToKeyboard() {
+  const out = layers.map(layer => ({
+    name: layer.name,
+    rows: Array.from({length:ROWS}, (_,r) => layer.grid.slice(r*COLS, r*COLS+COLS).map(v=>v||null))
+  }));
+  localStorage.setItem('hangul_layout', JSON.stringify(out));
+
+  const btn = document.querySelector('[onclick="applyToKeyboard()"]');
+  btn.textContent = '✓ 저장됨 (localStorage)';
+  setTimeout(() => btn.textContent = '키보드에 적용', 1800);
+}
+
+// ============================================================
+// 드래그로 팔레트 → 셀 배치
+// ============================================================
+let dragPKey = null;
+
+document.getElementById('pal-consonant').addEventListener('pointerdown', startPalDrag);
+document.getElementById('pal-vowel').addEventListener('pointerdown', startPalDrag);
+document.getElementById('pal-special').addEventListener('pointerdown', startPalDrag);
+
+function startPalDrag(e) {
+  const pk = e.target.closest('.pkey');
+  if (!pk || pk.classList.contains('used')) return;
+  dragPKey = pk.dataset.key;
+}
+
+document.addEventListener('pointerup', e => {
+  if (!dragPKey) return;
+  const target = document.elementFromPoint(e.clientX, e.clientY);
+  const cell = target?.closest?.('.cell');
+  if (cell) {
+    placeKey(parseInt(cell.dataset.idx), dragPKey);
+  }
+  dragPKey = null;
+});
+
+// ============================================================
+// 초기화
+// ============================================================
+loadPreset('default');
+renderLayerTabs();
+</script>
+</body>
+</html>
