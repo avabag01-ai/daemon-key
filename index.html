@@ -101,6 +101,33 @@ body {
   pointer-events:none; z-index:50; display:none;
 }
 #trail-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:40; }
+
+/* 숫자패드 오버레이 */
+#numpad {
+  display: none;
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 500px;
+  background: #0d1422; border-top: 2px solid #2a4080;
+  padding: 8px 6px 14px; z-index: 100;
+  flex-direction: column; gap: 5px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.6);
+}
+#numpad.show { display: flex; }
+#numpad .key-row { display: flex; gap: 5px; justify-content: center; }
+.num-key {
+  flex: 1; height: 60px;
+  background: #182440; border: 1px solid #2a3a60; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; color: #aad0ff; cursor: pointer; touch-action: none;
+  transition: background 0.06s;
+}
+.num-key:active, .num-key.pressed { background: #1e3a70; color: #fff; }
+.num-key.wide { flex: 2; }
+.num-key.special-num { font-size: 14px; color: #445; background: #0f1520; }
+#numpad-hint {
+  text-align: center; font-size: 10px; color: #2a4060;
+  padding-bottom: 2px; letter-spacing: 1px;
+}
 </style>
 </head>
 <body>
@@ -111,6 +138,31 @@ body {
 <div id="vowel-layer"></div>
 <div id="big-preview"></div>
 <canvas id="trail-canvas"></canvas>
+
+<!-- 두 손가락 터치 시 나타나는 숫자패드 -->
+<div id="numpad">
+  <div id="numpad-hint">✌ 두 손가락 떼면 닫힘</div>
+  <div class="key-row">
+    <div class="num-key" data-num="1">1</div>
+    <div class="num-key" data-num="2">2</div>
+    <div class="num-key" data-num="3">3</div>
+  </div>
+  <div class="key-row">
+    <div class="num-key" data-num="4">4</div>
+    <div class="num-key" data-num="5">5</div>
+    <div class="num-key" data-num="6">6</div>
+  </div>
+  <div class="key-row">
+    <div class="num-key" data-num="7">7</div>
+    <div class="num-key" data-num="8">8</div>
+    <div class="num-key" data-num="9">9</div>
+  </div>
+  <div class="key-row">
+    <div class="num-key special-num" data-num=".">.</div>
+    <div class="num-key wide" data-num="0">0</div>
+    <div class="num-key special-num" data-num="DEL">⌫</div>
+  </div>
+</div>
 
 <script>
 // ============================================================
@@ -595,6 +647,74 @@ function updateOutput(){
 }
 function showBigPreview(ch){const el=document.getElementById('big-preview');el.textContent=ch;el.style.display=ch?'block':'none';}
 function updateStatus(msg){document.getElementById('status').textContent=msg;}
+
+// ============================================================
+// 숫자패드 — 두 손가락 터치
+// ============================================================
+const numpad = document.getElementById('numpad');
+let numpadOpen = false;
+let activePointers = new Set();
+
+// 숫자패드 열기/닫기
+function openNumpad() {
+  if(numpadOpen) return;
+  numpadOpen = true;
+  numpad.classList.add('show');
+  // 진행 중인 한글/영어 입력 중단
+  hideVowelBubbles();
+  drag.choEl?.classList.remove('active-cho');
+  showBigPreview('');
+  clearEnLit();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drag = {active:false,cho:null,choEl:null,startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+  enSwipe = {active:false,keys:[],word:''};
+  updateStatus('숫자 입력 중 — 두 손가락 떼면 닫힘');
+}
+function closeNumpad() {
+  if(!numpadOpen) return;
+  numpadOpen = false;
+  numpad.classList.remove('show');
+  updateStatus('자음+모음=한글 / 영어는 키 위에서 쭉 그으세요');
+}
+
+// 두 손가락 감지 — 0.35초 유지해야 토글 (오터치 방지)
+let twoFingerTimer = null;
+let twoFingerHandled = false;
+document.getElementById('keyboard').addEventListener('touchstart', e => {
+  if(e.touches.length >= 2 && !twoFingerHandled && !twoFingerTimer) {
+    e.preventDefault();
+    twoFingerTimer = setTimeout(() => {
+      twoFingerHandled = true;
+      twoFingerTimer = null;
+      numpadOpen ? closeNumpad() : openNumpad();
+    }, 350);
+  }
+}, {passive: false});
+document.addEventListener('touchend', e => {
+  // 손가락 하나라도 떼면 타이머 취소
+  if(e.touches.length < 2) {
+    if(twoFingerTimer) { clearTimeout(twoFingerTimer); twoFingerTimer = null; }
+    twoFingerHandled = false;
+  }
+});
+
+// 숫자패드 키 입력
+numpad.querySelectorAll('.num-key').forEach(el => {
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation();
+    const num = el.dataset.num;
+    el.classList.add('pressed');
+    if(num === 'DEL') {
+      inputDelete();
+    } else {
+      commitComposing();
+      state.committed += num;
+      updateOutput();
+    }
+  });
+  el.addEventListener('pointerup', () => el.classList.remove('pressed'));
+  el.addEventListener('pointercancel', () => el.classList.remove('pressed'));
+});
 
 buildKeyboard();
 updateOutput();
