@@ -3,88 +3,123 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>한글 키보드</title>
+<title>데몬키</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-  body {
-    background: #1a1a2e;
-    color: #e0e0e0;
-    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh; padding: 20px 12px; touch-action: none;
-  }
-  h1 { font-size: 13px; color: #555; margin-bottom: 10px; letter-spacing: 1px; }
+* { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+body {
+  background: #111620; color: #ccc;
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  height: 100dvh; overflow: hidden; touch-action: none;
+}
 
-  #output {
-    width: 100%; max-width: 460px; min-height: 64px;
-    background: #16213e; border: 1px solid #0f3460; border-radius: 12px;
-    padding: 12px 16px; font-size: 26px; line-height: 1.5;
-    word-break: break-all; margin-bottom: 6px;
-  }
-  #output .composing { border-bottom: 2px solid #e94560; color: #e94560; }
+#output {
+  width: 100%; max-width: 500px; flex: 1;
+  background: #0d1220; padding: 16px;
+  font-size: 28px; line-height: 1.6; word-break: break-all;
+  overflow-y: auto; display: flex; align-items: flex-end;
+}
+#output .composing { border-bottom: 2px solid #e94560; color: #e94560; }
 
-  #status {
-    width: 100%; max-width: 460px; height: 26px;
-    font-size: 12px; color: #445; margin-bottom: 10px; text-align: center;
-  }
+/* 단어 예측 바 */
+#word-bar {
+  width: 100%; max-width: 500px;
+  height: 40px; min-height: 40px;
+  background: #0d1628; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540;
+  display: flex; align-items: center; gap: 2px;
+  overflow-x: auto; overflow-y: hidden; padding: 0 6px;
+  scrollbar-width: none;
+}
+#word-bar::-webkit-scrollbar { display: none; }
+.word-candidate {
+  flex-shrink: 0; height: 30px; padding: 0 13px;
+  background: #182238; border: 1px solid #253050; border-radius: 6px;
+  font-size: 15px; color: #7aaeff; display: flex; align-items: center;
+  cursor: pointer; white-space: nowrap;
+  transition: background 0.08s, color 0.08s;
+}
+.word-candidate:active { background: #1e3a70; color: #fff; }
 
-  #keyboard {
-    width: 100%; max-width: 460px;
-    display: flex; flex-direction: column; gap: 7px;
-  }
-  .key-row { display: flex; gap: 6px; justify-content: center; }
+#status {
+  width: 100%; max-width: 500px; height: 22px;
+  font-size: 11px; color: #334; text-align: center; line-height: 22px;
+  background: #0d1220;
+}
 
-  .key {
-    flex: 1; max-width: 82px; height: 70px;
-    background: #16213e; border: 1.5px solid #0f3460; border-radius: 12px;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-size: 22px; color: #ddd; cursor: pointer; position: relative;
-    touch-action: none;
-    transition: background 0.07s, border-color 0.07s, transform 0.07s;
-  }
-  .key.special {
-    font-size: 13px; color: #555; background: #111827;
-    border-color: #1e2b3c; max-width: 120px;
-  }
-  .key.special:active { background: #1e2b3c; }
+#keyboard {
+  width: 100%; max-width: 500px;
+  padding: 6px 4px 10px; background: #151c2e;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.key-row { display: flex; gap: 5px; justify-content: center; }
 
-  /* 자음 누른 상태 */
-  .key.active-cho {
-    background: #e94560 !important; border-color: #e94560 !important;
-    color: white !important; transform: scale(0.94); z-index: 10;
-  }
+.key {
+  flex: 1; height: 58px;
+  background: #1c2640; border: 1px solid #252f4a; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 21px; color: #ccc;
+  position: relative; cursor: pointer; touch-action: none;
+  transition: background 0.06s, border-color 0.06s, transform 0.06s;
+}
+.key.active-cho {
+  background: #c0283e !important; border-color: #e94560 !important;
+  color: white !important; transform: scale(0.94); z-index: 5;
+}
+.key.special { font-size: 13px; color: #445; background: #0f1520; border-color: #1a2035; }
 
-  /* 드래그 방향 힌트: 키 주변 4방향 작은 레이블 */
-  .key .hint { position: absolute; font-size: 9px; color: #445; pointer-events: none; transition: color 0.1s, font-size 0.1s; }
-  .key .hint.up    { top: 4px;    left: 50%; transform: translateX(-50%); }
-  .key .hint.down  { bottom: 4px; left: 50%; transform: translateX(-50%); }
-  .key .hint.left  { left: 4px;   top: 50%;  transform: translateY(-50%); }
-  .key .hint.right { right: 4px;  top: 50%;  transform: translateY(-50%); }
+/* 방사형 모음 버블 */
+#vowel-layer {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 60;
+}
 
-  /* 자음 누르면 힌트 강조 */
-  .key.active-cho .hint { color: rgba(255,255,255,0.7); font-size: 11px; font-weight: bold; }
+.vowel-bubble {
+  position: absolute;
+  width: 46px; height: 46px;
+  background: #0e1e3a; border: 1.5px solid #1a3a6a;
+  border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+}
+.vowel-bubble .v-char { font-size: 17px; color: #5a8aee; line-height: 1; }
+.vowel-bubble .v-merged { font-size: 9px; color: #2a4a6a; margin-top: 1px; }
 
-  /* 큰 미리보기 */
-  #big-preview {
-    position: fixed; top: 36%; left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 120px; color: rgba(233,69,96,0.22);
-    font-weight: bold; pointer-events: none; z-index: 50; display: none;
-  }
+.vowel-bubble.near {
+  width: 52px; height: 52px;
+}
+.vowel-bubble.near .v-char { font-size: 19px; }
 
-  /* 방향 화살표 캔버스 */
-  #trail-canvas {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none; z-index: 40;
-  }
+.vowel-bubble.highlighted {
+  background: #1a4a8a !important; border-color: #4a8fff !important;
+  transform: translate(-50%, -50%) scale(1.2) !important;
+  box-shadow: 0 0 18px rgba(74,143,255,0.6);
+}
+.vowel-bubble.highlighted .v-char { color: #fff !important; font-size: 21px; }
+.vowel-bubble.highlighted .v-merged { color: rgba(255,255,255,0.7) !important; }
+
+/* 큰 미리보기 */
+#big-preview {
+  position: fixed; top: 33%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 140px; color: rgba(233,69,96,0.16);
+  font-weight: bold; pointer-events: none; z-index: 50; display: none;
+}
+
+/* 궤적 캔버스 */
+#trail-canvas {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 40;
+}
 </style>
 </head>
 <body>
-
-<h1>모아키식 한글 — 드래그로 모음, 꺾으면 획 추가</h1>
 <div id="output"><span id="committed"></span><span class="composing" id="composing"></span></div>
-<div id="status">자음 누르고 방향으로 긁으세요</div>
+<div id="word-bar"></div>
+<div id="status">자음 누르고 모음까지 긁으세요</div>
 <div id="keyboard"></div>
+<div id="vowel-layer"></div>
 <div id="big-preview"></div>
 <canvas id="trail-canvas"></canvas>
 
@@ -95,90 +130,51 @@
 const CHOSUNG  = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
 const JUNGSUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
 const JONGSUNG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
-
-const CHOSUNG_IDX  = {}; CHOSUNG.forEach((c,i)  => CHOSUNG_IDX[c]  = i);
-const JUNGSUNG_IDX = {}; JUNGSUNG.forEach((c,i) => JUNGSUNG_IDX[c] = i);
-const JONGSUNG_IDX = {}; JONGSUNG.forEach((c,i) => { if(c) JONGSUNG_IDX[c] = i; });
-
-const JONGSUNG_SPLIT = {
-  'ㄳ':['ㄱ','ㅅ'],'ㄵ':['ㄴ','ㅈ'],'ㄶ':['ㄴ','ㅎ'],
-  'ㄺ':['ㄹ','ㄱ'],'ㄻ':['ㄹ','ㅁ'],'ㄼ':['ㄹ','ㅂ'],
-  'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],'ㄿ':['ㄹ','ㅍ'],
-  'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ']
-};
-const COMBINE_JONG = {
-  'ㄱ':{'ㅅ':'ㄳ'},'ㄴ':{'ㅈ':'ㄵ','ㅎ':'ㄶ'},
-  'ㄹ':{'ㄱ':'ㄺ','ㅁ':'ㄻ','ㅂ':'ㄼ','ㅅ':'ㄽ','ㅌ':'ㄾ','ㅍ':'ㄿ','ㅎ':'ㅀ'},
-  'ㅂ':{'ㅅ':'ㅄ'}
-};
-
-function compose(cho, jung, jongIdx=0) {
-  const ci=CHOSUNG_IDX[cho], ji=JUNGSUNG_IDX[jung];
-  if(ci===undefined||ji===undefined) return null;
-  return String.fromCharCode(0xAC00+(ci*21+ji)*28+jongIdx);
-}
-function decompose(ch) {
-  const code=ch.charCodeAt(0)-0xAC00;
-  if(code<0||code>11171) return null;
-  const jong=code%28, jung=Math.floor(code/28)%21, cho=Math.floor(code/28/21);
-  return {cho:CHOSUNG[cho],jung:JUNGSUNG[jung],jong:JONGSUNG[jong],jongIdx:jong};
-}
+const CHOSUNG_IDX={};  CHOSUNG.forEach((c,i)=>CHOSUNG_IDX[c]=i);
+const JUNGSUNG_IDX={}; JUNGSUNG.forEach((c,i)=>JUNGSUNG_IDX[c]=i);
+const JONGSUNG_IDX={}; JONGSUNG.forEach((c,i)=>{if(c)JONGSUNG_IDX[c]=i;});
+const JONGSUNG_SPLIT={'ㄳ':['ㄱ','ㅅ'],'ㄵ':['ㄴ','ㅈ'],'ㄶ':['ㄴ','ㅎ'],'ㄺ':['ㄹ','ㄱ'],'ㄻ':['ㄹ','ㅁ'],'ㄼ':['ㄹ','ㅂ'],'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],'ㄿ':['ㄹ','ㅍ'],'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ']};
+const COMBINE_JONG={'ㄱ':{'ㅅ':'ㄳ'},'ㄴ':{'ㅈ':'ㄵ','ㅎ':'ㄶ'},'ㄹ':{'ㄱ':'ㄺ','ㅁ':'ㄻ','ㅂ':'ㄼ','ㅅ':'ㄽ','ㅌ':'ㄾ','ㅍ':'ㄿ','ㅎ':'ㅀ'},'ㅂ':{'ㅅ':'ㅄ'}};
+function compose(cho,jung,ji=0){const ci=CHOSUNG_IDX[cho],ji2=JUNGSUNG_IDX[jung];if(ci===undefined||ji2===undefined)return null;return String.fromCharCode(0xAC00+(ci*21+ji2)*28+ji);}
+function decompose(ch){const code=ch.charCodeAt(0)-0xAC00;if(code<0||code>11171)return null;const jong=code%28,jung=Math.floor(code/28)%21,cho=Math.floor(code/28/21);return{cho:CHOSUNG[cho],jung:JUNGSUNG[jung],jong:JONGSUNG[jong],jongIdx:jong};}
 
 // ============================================================
-// 방향 → 모음 매핑 (모아키식)
-//
-//   → = ㅏ   꺾기(←) = ㅑ
-//   ← = ㅓ   꺾기(→) = ㅕ
-//   ↑ = ㅗ   꺾기(↓) = ㅛ
-//   ↓ = ㅜ   꺾기(↑) = ㅠ
-//   ↗ = ㅣ
-//   ↘ = ㅡ
-//   ↖ = ㅐ   (꺾기→↗ = ㅒ)
-//   ↙ = ㅔ   (꺾기→↗ = ㅖ)
-//
-// 복합모음 (2단계 꺾기):
-//   ↑→  = ㅘ  (ㅗ+ㅏ)
-//   ↑↗  = ㅚ  (ㅗ+ㅣ)
-//   ↓←  = ㅝ  (ㅜ+ㅓ)
-//   ↓↗  = ㅟ  (ㅜ+ㅣ)
-//   ↘↗  = ㅢ  (ㅡ+ㅣ)
+// 모음 배치 — 방사형
+// angle(도), dist(가까움=1, 멀=2,3), vowel
+// 가까운 것 = 자주 쓰는 기본 모음
+// 먼 것 = 복합/희귀 모음
 // ============================================================
+const VOWEL_LAYOUT = [
+  // 1단계 (가까움, dist=1) — 기본 6모음
+  { angle:  0,  dist:1, v:'ㅗ' },   // 위
+  { angle: 180, dist:1, v:'ㅜ' },   // 아래
+  { angle:  90, dist:1, v:'ㅏ' },   // 오른
+  { angle: 270, dist:1, v:'ㅓ' },   // 왼
+  { angle:  45, dist:1, v:'ㅣ' },   // 우상
+  { angle: 225, dist:1, v:'ㅡ' },   // 좌하
 
-const DIR_VOWEL = {
-  'R':  { base:'ㅏ', extra:'ㅑ', opposite:'L' },
-  'L':  { base:'ㅓ', extra:'ㅕ', opposite:'R' },
-  'U':  { base:'ㅗ', extra:'ㅛ', opposite:'D' },
-  'D':  { base:'ㅜ', extra:'ㅠ', opposite:'U' },
-  'UR': { base:'ㅣ', extra:null,  opposite:null },
-  'DR': { base:'ㅡ', extra:null,  opposite:null },
-  'UL': { base:'ㅐ', extra:'ㅒ',  opposite:null },
-  'DL': { base:'ㅔ', extra:'ㅖ',  opposite:null },
-};
+  // 2단계 (중간, dist=2) — 획추가 모음 + ㅐ ㅔ
+  { angle:  0,  dist:2, v:'ㅛ' },   // 위 멀리
+  { angle: 180, dist:2, v:'ㅠ' },   // 아래 멀리
+  { angle:  90, dist:2, v:'ㅑ' },   // 오른 멀리
+  { angle: 270, dist:2, v:'ㅕ' },   // 왼 멀리
+  { angle: 315, dist:2, v:'ㅐ' },   // 좌상
+  { angle: 135, dist:2, v:'ㅔ' },   // 우하
 
-// 복합모음: firstDir + 꺾인 dir 조합
-const COMPOUND_VOWEL = {
-  'U+R':  'ㅘ',   // ↑ 후 →
-  'U+UR': 'ㅚ',   // ↑ 후 ↗
-  'D+L':  'ㅝ',   // ↓ 후 ←
-  'D+UR': 'ㅟ',   // ↓ 후 ↗
-  'DR+UR':'ㅢ',   // ↘ 후 ↗
-  'U+UL': 'ㅙ',   // ↑ 후 ↖ (ㅗ+ㅐ)
-  'D+UL': 'ㅞ',   // ↓ 후 ↖ (ㅜ+ㅐ)
-};
+  // 3단계 (멀리, dist=3) — 복합모음
+  { angle:  60, dist:2, v:'ㅘ' },   // 위+오른
+  { angle: 240, dist:2, v:'ㅝ' },   // 아래+왼
+  { angle:  30, dist:3, v:'ㅚ' },   // ↑+↗
+  { angle: 210, dist:3, v:'ㅟ' },   // ↓+↙
+  { angle: 315, dist:3, v:'ㅒ' },   // 좌상 멀리
+  { angle: 135, dist:3, v:'ㅖ' },   // 우하 멀리
+  { angle:  75, dist:3, v:'ㅙ' },   // ↑↖
+  { angle: 255, dist:3, v:'ㅞ' },   // ↓↖
+  { angle:  45, dist:3, v:'ㅢ' },   // ↗ 멀리
+];
 
-// x,y 델타 → 방향 코드
-function getDir(dx, dy) {
-  const adx = Math.abs(dx), ady = Math.abs(dy);
-  if (adx < 8 && ady < 8) return null; // 너무 짧음
-  const ratio = adx / (ady || 0.01);
-  if (ratio > 2.5) return dx > 0 ? 'R' : 'L';   // 거의 수평
-  if (ratio < 0.4) return dy > 0 ? 'D' : 'U';   // 거의 수직
-  // 사선
-  if (dx > 0 && dy < 0) return 'UR';
-  if (dx > 0 && dy > 0) return 'DR';
-  if (dx < 0 && dy < 0) return 'UL';
-  return 'DL';
-}
+// dist별 픽셀 반경
+const DIST_R = { 1: 68, 2: 115, 3: 158 };
 
 // ============================================================
 // 레이아웃
@@ -189,363 +185,338 @@ const LAYOUT_ROWS = [
   ['ㅈ','ㅊ','ㅋ','ㅌ'],
   ['ㅍ','ㅎ','SPC','DEL'],
 ];
+const DOUBLE_CHO={'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
 
-// 각 자음 키에 힌트 표시 (↑ㅗ ↓ㅜ →ㅏ ←ㅓ)
-const DIR_HINTS = {up:'ㅗ', down:'ㅜ', right:'ㅏ', left:'ㅓ'};
+// ============================================================
+// 단어 예측 — localStorage 기반
+// wordFreq: { "단어": 빈도수 }
+// ============================================================
+let wordFreq = {};
+try { wordFreq = JSON.parse(localStorage.getItem('dk_wordFreq')||'{}'); } catch(e){}
+let currentWordBuf = ''; // 현재 입력 중인 단어 누적 버퍼 (스페이스 기준으로 분리)
+
+function saveWordFreq() {
+  try { localStorage.setItem('dk_wordFreq', JSON.stringify(wordFreq)); } catch(e){}
+}
+
+// 스페이스/엔터 시 현재 단어 기록
+function recordWord(word) {
+  word = word.trim();
+  if(!word || word.length < 2) return; // 1글자 이하 무시
+  wordFreq[word] = (wordFreq[word]||0) + 1;
+  saveWordFreq();
+}
+
+// 현재 커밋+컴포징 텍스트에서 마지막 단어 추출
+function getCurrentWord() {
+  const c = state.composing;
+  const composingStr = c ? (c.jung?(compose(c.cho,c.jung,c.jongIdx||0)||(c.cho+c.jung)):c.cho) : '';
+  const full = state.committed + composingStr;
+  // 마지막 스페이스 이후가 현재 단어
+  const lastSpace = full.lastIndexOf(' ');
+  return full.slice(lastSpace+1);
+}
+
+// 첫 글자 기준 매칭 후보 (빈도순 정렬, 최대 10개)
+function getCandidates() {
+  const cur = getCurrentWord();
+  if(!cur) return [];
+  const candidates = Object.entries(wordFreq)
+    .filter(([w]) => w.startsWith(cur) && w !== cur)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,10)
+    .map(([w]) => w);
+  return candidates;
+}
+
+function updateWordBar() {
+  const bar = document.getElementById('word-bar');
+  const candidates = getCandidates();
+  bar.innerHTML = '';
+  candidates.forEach(word => {
+    const el = document.createElement('div');
+    el.className = 'word-candidate';
+    el.textContent = word;
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      applyCandidate(word);
+    });
+    bar.appendChild(el);
+  });
+}
+
+// 후보 선택 → 현재 단어 교체
+function applyCandidate(word) {
+  const cur = getCurrentWord();
+  // 현재 단어만큼 뒤로 지우고 word 삽입
+  // commitComposing 처리 후 state.committed 끝에서 cur 제거
+  if(state.composing) { commitComposing(); }
+  // committed 끝에서 cur 제거
+  if(state.committed.endsWith(cur)) {
+    state.committed = state.committed.slice(0, state.committed.length - cur.length);
+  }
+  state.committed += word;
+  recordWord(word);
+  state.composing = null;
+  updateOutput();
+  updateWordBar();
+}
 
 // ============================================================
 // 상태
 // ============================================================
-let state = { committed:'', composing:null };
-
-let drag = {
-  active: false,
-  cho: null,
-  choEl: null,
-  startX: 0, startY: 0,
-  curX: 0, curY: 0,
-  firstDir: null,      // 첫 번째 방향 (기준)
-  turnPt: null,        // 꺾인 지점 좌표
-  reversed: false,
-  currentVowel: null,
-  trail: [],
-};
-
-// 쌍자음 더블탭
-const DOUBLE_CHO = {'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
-let lastTap = { key: null, time: 0 };
+let state={committed:'',composing:null};
+let drag={active:false,cho:null,choEl:null,
+  startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+let lastTap={key:null,time:0};
 
 // ============================================================
-// 키보드 DOM
+// DOM
 // ============================================================
-const kbEl = document.getElementById('keyboard');
-const allKeyEls = [];
+const kbEl=document.getElementById('keyboard');
+const vowelLayer=document.getElementById('vowel-layer');
+const allKeyEls=[];
 
-LAYOUT_ROWS.forEach(row => {
-  const rowEl = document.createElement('div');
-  rowEl.className = 'key-row';
-  row.forEach(label => {
-    const el = document.createElement('div');
-    el.className = 'key';
-    el.dataset.key = label;
-    if (label === 'SPC' || label === 'DEL') {
-      el.classList.add('special');
-      el.textContent = label === 'SPC' ? 'space' : '⌫';
-    } else {
-      el.textContent = label;
-      if (DOUBLE_CHO[label]) {
-        const db = document.createElement('span');
-        db.style.cssText = 'position:absolute;top:3px;right:4px;font-size:8px;color:#446;';
-        db.textContent = DOUBLE_CHO[label];
-        el.appendChild(db);
+LAYOUT_ROWS.forEach(row=>{
+  const rowEl=document.createElement('div');
+  rowEl.className='key-row';
+  row.forEach(k=>{
+    const el=document.createElement('div');
+    el.className='key'; el.dataset.key=k;
+    if(k==='SPC'||k==='DEL'){el.classList.add('special');el.textContent=k==='SPC'?'space':'⌫';}
+    else{
+      el.textContent=k;
+      if(DOUBLE_CHO[k]){
+        const d=document.createElement('span');
+        d.style.cssText='position:absolute;top:3px;right:4px;font-size:8px;color:#334;';
+        d.textContent=DOUBLE_CHO[k]; el.appendChild(d);
       }
-      // 방향 힌트
-      [['up','ㅗ'],['down','ㅜ'],['right','ㅏ'],['left','ㅓ']].forEach(([d,v]) => {
-        const h = document.createElement('span');
-        h.className = `hint ${d}`;
-        h.textContent = v;
-        el.appendChild(h);
-      });
     }
-    rowEl.appendChild(el);
-    allKeyEls.push(el);
+    rowEl.appendChild(el); allKeyEls.push({el,defaultKey:k});
   });
   kbEl.appendChild(rowEl);
 });
 
 // ============================================================
-// 캔버스 궤적
+// 캔버스
 // ============================================================
-const canvas = document.getElementById('trail-canvas');
-const ctx = canvas.getContext('2d');
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+const canvas=document.getElementById('trail-canvas');
+const ctx=canvas.getContext('2d');
+function resizeCanvas(){canvas.width=innerWidth;canvas.height=innerHeight;}
+resizeCanvas(); window.addEventListener('resize',resizeCanvas);
+function drawTrail(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const t=drag.trail;
+  if(!drag.active||t.length<2)return;
+  ctx.beginPath(); ctx.moveTo(t[0].x,t[0].y);
+  t.forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle='rgba(233,69,96,0.35)';
+  ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
 }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
 
-function drawTrail() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!drag.active || drag.trail.length < 2) return;
-  ctx.beginPath();
-  ctx.moveTo(drag.trail[0].x, drag.trail[0].y);
-  drag.trail.forEach(p => ctx.lineTo(p.x, p.y));
-  ctx.strokeStyle = drag.reversed ? 'rgba(100,200,255,0.5)' : 'rgba(233,69,96,0.4)';
-  ctx.lineWidth = 3;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.stroke();
+// ============================================================
+// 방사형 모음 버블 생성/제거
+// ============================================================
+function showVowelBubbles(cx, cy, cho) {
+  vowelLayer.innerHTML='';
+  drag.bubbles=[];
+
+  VOWEL_LAYOUT.forEach(item=>{
+    const rad=item.angle*Math.PI/180;
+    const r=DIST_R[item.dist];
+    const bx=cx+Math.cos(rad)*r;
+    const by=cy-Math.sin(rad)*r; // y축 반전 (0도=위)
+
+    // 화면 밖이면 스킵
+    if(bx<20||bx>innerWidth-20||by<20||by>innerHeight-20) return;
+
+    const merged=compose(cho,item.v,0)||(cho+item.v);
+
+    const el=document.createElement('div');
+    el.className='vowel-bubble';
+    if(item.dist===1) el.classList.add('near');
+    el.style.left=bx+'px'; el.style.top=by+'px';
+
+    const vc=document.createElement('span'); vc.className='v-char'; vc.textContent=item.v;
+    const vm=document.createElement('span'); vm.className='v-merged'; vm.textContent=merged;
+    el.appendChild(vc); el.appendChild(vm);
+
+    vowelLayer.appendChild(el);
+    drag.bubbles.push({el, vowel:item.v, merged, x:bx, y:by, dist:item.dist});
+  });
+}
+
+function hideVowelBubbles(){
+  vowelLayer.innerHTML='';
+  drag.bubbles=[];
+}
+
+// 포인터에서 가장 가까운 버블 찾기
+function findClosestBubble(px,py){
+  // 선택 반경: dist=1→50px, dist=2→55px, dist=3→50px
+  const SELECT_R = {1:50, 2:55, 3:50};
+  let best=null, bestDist=Infinity;
+  drag.bubbles.forEach(b=>{
+    const d=Math.hypot(px-b.x,py-b.y);
+    const limit=SELECT_R[b.dist]||50;
+    if(d<limit&&d<bestDist){bestDist=d;best=b;}
+  });
+  return best;
 }
 
 // ============================================================
 // 이벤트
 // ============================================================
-allKeyEls.forEach(el => {
-  el.addEventListener('pointerdown', e => {
+allKeyEls.forEach(({el,defaultKey})=>{
+  el.addEventListener('pointerdown',e=>{
     e.preventDefault();
-    const key = el.dataset.key;
-    if (key === 'SPC') { inputSpace(); return; }
-    if (key === 'DEL') { inputDelete(); return; }
-    // 더블탭 → 쌍자음
-    const now = Date.now();
-    let cho = key;
-    if (lastTap.key === key && now - lastTap.time < 350 && DOUBLE_CHO[key]) {
-      cho = DOUBLE_CHO[key];
-      lastTap = { key: null, time: 0 };
-    } else {
-      lastTap = { key, time: now };
-    }
+    if(defaultKey==='SPC'){inputSpace();return;}
+    if(defaultKey==='DEL'){inputDelete();return;}
 
-    // 자음 드래그 시작
-    const pt = { x: e.clientX, y: e.clientY };
-    drag.active = true;
-    drag.cho = cho;
-    drag.choEl = el;
-    drag.startX = pt.x; drag.startY = pt.y;
-    drag.curX = pt.x; drag.curY = pt.y;
-    drag.firstDir = null;
-    drag.turnPt = null;
-    drag.reversed = false;
-    drag.currentVowel = null;
-    drag.trail = [pt];
+    const now=Date.now();
+    let cho=defaultKey;
+    if(lastTap.key===defaultKey&&now-lastTap.time<320&&DOUBLE_CHO[defaultKey]){
+      cho=DOUBLE_CHO[defaultKey]; lastTap={key:null,time:0};
+    } else { lastTap={key:defaultKey,time:now}; }
+
+    const rect=el.getBoundingClientRect();
+    const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+    const pt={x:e.clientX,y:e.clientY};
+
+    drag={active:true,cho,choEl:el,
+      startX:pt.x,startY:pt.y,currentVowel:null,trail:[pt],bubbles:[]};
+
     el.classList.add('active-cho');
     el.setPointerCapture(e.pointerId);
-    updateStatus(`${cho} + ?`);
+
+    // 즉시 모음 버블 표시
+    showVowelBubbles(cx,cy,cho);
+    updateStatus(`${cho}  →  모음 선택`);
   });
 });
 
-document.addEventListener('pointermove', e => {
-  if (!drag.active) return;
-  const px = e.clientX, py = e.clientY;
-  drag.curX = px; drag.curY = py;
-  drag.trail.push({ x: px, y: py });
+document.addEventListener('pointermove',e=>{
+  if(!drag.active)return;
+  const px=e.clientX,py=e.clientY;
+  drag.trail.push({x:px,y:py});
 
-  // 전체 방향 (시작점 기준)
-  const totalDx = px - drag.startX;
-  const totalDy = py - drag.startY;
-  const totalDir = getDir(totalDx, totalDy);
+  // 가장 가까운 버블 찾기
+  const closest=findClosestBubble(px,py);
 
-  if (!totalDir) {
-    drag.currentVowel = null;
-    showBigPreview('');
-    updateStatus(`${drag.cho} + ?`);
-    drawTrail();
-    return;
-  }
-
-  // 첫 방향 확정 (20px 이상 이동 후)
-  if (!drag.firstDir && Math.hypot(totalDx, totalDy) > 20) {
-    drag.firstDir = totalDir;
-    drag.turnPt = null;
-  }
-
-  if (!drag.firstDir) { drawTrail(); return; }
-
-  // 최근 구간 방향: 최근 8점 기준
-  const t = drag.trail;
-  let recentDir = totalDir;
-  if (t.length >= 8) {
-    const ref = t[t.length - 8];
-    const rdx = px - ref.x, rdy = py - ref.y;
-    recentDir = getDir(rdx, rdy) || totalDir;
-  }
-
-  // 꺾기 감지: 첫 방향과 최근 방향이 달라지면
-  let vowel, reversed = false;
-
-  if (recentDir !== drag.firstDir && !drag.turnPt) {
-    // 꺾인 지점 기록
-    drag.turnPt = { x: px, y: py };
-  }
-
-  if (drag.turnPt) {
-    // 꺾인 후 현재 방향
-    const compoundKey = `${drag.firstDir}+${recentDir}`;
-    if (COMPOUND_VOWEL[compoundKey]) {
-      vowel = COMPOUND_VOWEL[compoundKey];
-      reversed = true;
-    } else if (DIR_VOWEL[drag.firstDir]?.opposite === recentDir) {
-      vowel = DIR_VOWEL[drag.firstDir].extra || DIR_VOWEL[drag.firstDir].base;
-      reversed = true;
-    } else {
-      // 꺾기지만 매핑 없음 → 기본 방향 유지
-      vowel = DIR_VOWEL[drag.firstDir]?.base;
-      reversed = false;
-    }
+  // 하이라이트 업데이트
+  drag.bubbles.forEach(b=>b.el.classList.remove('highlighted'));
+  if(closest){
+    closest.el.classList.add('highlighted');
+    drag.currentVowel=closest.vowel;
+    showBigPreview(closest.merged);
+    updateStatus(`${drag.cho} + ${closest.vowel} = ${closest.merged}`);
   } else {
-    vowel = DIR_VOWEL[drag.firstDir]?.base;
-  }
-
-  drag.reversed = reversed;
-  drag.currentVowel = vowel || null;
-  const preview = previewChar(drag.cho, vowel);
-  showBigPreview(preview);
-  updateStatus(`${drag.cho} → ${dir}${drag.reversed ? ' ↩꺾기' : ''}  →  ${preview}`);
-
-  // 힌트 하이라이트: 현재 방향 힌트를 강조
-  if (drag.choEl) {
-    drag.choEl.querySelectorAll('.hint').forEach(h => h.style.color = '');
-    const dirMap = {R:'right',L:'left',U:'up',D:'down'};
-    const hintClass = dirMap[drag.reversed ? DIR_VOWEL[drag.firstDir]?.opposite : dir] || dirMap[dir?.charAt(1)] || '';
-    if (hintClass) {
-      const hEl = drag.choEl.querySelector(`.hint.${hintClass}`);
-      if (hEl) hEl.style.color = drag.reversed ? '#64c8ff' : '#ff6080';
-    }
+    drag.currentVowel=null;
+    showBigPreview('');
+    updateStatus(`${drag.cho}  →  모음 선택`);
   }
 
   drawTrail();
 });
 
-document.addEventListener('pointerup', e => {
-  if (!drag.active) return;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+document.addEventListener('pointerup',e=>{
+  if(!drag.active)return;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
   showBigPreview('');
+  hideVowelBubbles();
+  drag.choEl?.classList.remove('active-cho');
 
-  if (drag.choEl) drag.choEl.classList.remove('active-cho');
-
-  if (drag.currentVowel) {
-    inputConsonantVowel(drag.cho, drag.currentVowel);
+  if(drag.currentVowel){
+    inputConsonantVowel(drag.cho,drag.currentVowel);
   } else {
-    // 드래그 없이 탭 → 자음 단독
     inputConsonantOnly(drag.cho);
   }
 
-  drag.active = false;
-  drag.cho = null; drag.choEl = null;
-  drag.firstDir = null; drag.reversed = false;
-  drag.currentVowel = null; drag.trail = [];
-  updateStatus('자음 누르고 방향으로 긁으세요');
+  drag={active:false,cho:null,choEl:null,
+    startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+  updateStatus('자음 누르고 모음까지 긁으세요');
 });
 
 // ============================================================
 // 입력 로직
 // ============================================================
-function inputConsonantOnly(cho) {
-  if (!state.composing) {
-    state.composing = {cho, jung:null, jong:null, jongIdx:0};
-  } else if (!state.composing.jung) {
-    commitComposing();
-    state.composing = {cho, jung:null, jong:null, jongIdx:0};
-  } else if (!state.composing.jong) {
-    if (JONGSUNG_IDX[cho] !== undefined) {
-      state.composing.jong = cho;
-      state.composing.jongIdx = JONGSUNG_IDX[cho];
-    } else {
-      commitComposing();
-      state.composing = {cho, jung:null, jong:null, jongIdx:0};
-    }
+function inputConsonantOnly(cho){
+  if(!state.composing){state.composing={cho,jung:null,jong:null,jongIdx:0};}
+  else if(!state.composing.jung){commitComposing();state.composing={cho,jung:null,jong:null,jongIdx:0};}
+  else if(!state.composing.jong){
+    if(JONGSUNG_IDX[cho]!==undefined){state.composing.jong=cho;state.composing.jongIdx=JONGSUNG_IDX[cho];}
+    else{commitComposing();state.composing={cho,jung:null,jong:null,jongIdx:0};}
   } else {
-    const combined = COMBINE_JONG[state.composing.jong]?.[cho];
-    if (combined) {
-      state.composing.jong = combined;
-      state.composing.jongIdx = JONGSUNG_IDX[combined];
-    } else {
-      commitComposing();
-      state.composing = {cho, jung:null, jong:null, jongIdx:0};
-    }
+    const c=COMBINE_JONG[state.composing.jong]?.[cho];
+    if(c){state.composing.jong=c;state.composing.jongIdx=JONGSUNG_IDX[c];}
+    else{commitComposing();state.composing={cho,jung:null,jong:null,jongIdx:0};}
   }
   updateOutput();
 }
 
-function inputConsonantVowel(cho, vowel) {
-  if (!state.composing) {
-    state.composing = {cho, jung:vowel, jong:null, jongIdx:0};
-
-  } else if (!state.composing.jung) {
-    if (state.composing.cho === cho) {
-      state.composing.jung = vowel;
-    } else {
-      commitComposing();
-      state.composing = {cho, jung:vowel, jong:null, jongIdx:0};
-    }
-
-  } else if (!state.composing.jong) {
-    commitComposing();
-    state.composing = {cho, jung:vowel, jong:null, jongIdx:0};
-
+function inputConsonantVowel(cho,vowel){
+  if(!state.composing){state.composing={cho,jung:vowel,jong:null,jongIdx:0};}
+  else if(!state.composing.jung){
+    if(state.composing.cho===cho){state.composing.jung=vowel;}
+    else{commitComposing();state.composing={cho,jung:vowel,jong:null,jongIdx:0};}
+  } else if(!state.composing.jong){
+    commitComposing();state.composing={cho,jung:vowel,jong:null,jongIdx:0};
   } else {
-    // 받침 → 다음 초성으로
-    const jong = state.composing.jong;
-    let movingCho, remainJong, remainJongIdx;
-    if (JONGSUNG_SPLIT[jong]) {
-      [remainJong, movingCho] = JONGSUNG_SPLIT[jong];
-      remainJongIdx = JONGSUNG_IDX[remainJong];
-    } else {
-      movingCho = jong; remainJong = null; remainJongIdx = 0;
-    }
-    state.composing.jong = remainJong;
-    state.composing.jongIdx = remainJongIdx;
-    const prevChar = compose(state.composing.cho, state.composing.jung, remainJongIdx);
-    state.committed += prevChar || (state.composing.cho + state.composing.jung);
-    state.composing = {cho: movingCho, jung: vowel, jong: null, jongIdx: 0};
+    const jong=state.composing.jong;
+    let movingCho,remainJong,remainJongIdx;
+    if(JONGSUNG_SPLIT[jong]){[remainJong,movingCho]=JONGSUNG_SPLIT[jong];remainJongIdx=JONGSUNG_IDX[remainJong];}
+    else{movingCho=jong;remainJong=null;remainJongIdx=0;}
+    state.composing.jong=remainJong;state.composing.jongIdx=remainJongIdx;
+    const prev=compose(state.composing.cho,state.composing.jung,remainJongIdx);
+    state.committed+=prev||(state.composing.cho+state.composing.jung);
+    state.composing={cho:movingCho,jung:vowel,jong:null,jongIdx:0};
   }
   updateOutput();
 }
 
-function commitComposing() {
-  if (!state.composing) return;
-  const c = state.composing;
-  state.committed += c.jung
-    ? (compose(c.cho, c.jung, c.jongIdx||0) || c.cho+c.jung)
-    : c.cho;
-  state.composing = null;
+function commitComposing(){
+  if(!state.composing)return;
+  const c=state.composing;
+  state.committed+=c.jung?(compose(c.cho,c.jung,c.jongIdx||0)||(c.cho+c.jung)):c.cho;
+  state.composing=null;
 }
-
-function inputSpace() {
+function inputSpace(){
+  // 스페이스 전에 현재 단어 기록
+  const word = getCurrentWord();
   commitComposing();
-  state.committed += ' ';
+  recordWord(word || getCurrentWord());
+  state.committed+=' ';
   updateOutput();
 }
-
-function inputDelete() {
-  if (state.composing) {
-    const c = state.composing;
-    if (c.jong) {
-      if (JONGSUNG_SPLIT[c.jong]) {
-        c.jong = JONGSUNG_SPLIT[c.jong][0];
-        c.jongIdx = JONGSUNG_IDX[c.jong];
-      } else { c.jong=null; c.jongIdx=0; }
-    } else if (c.jung) { c.jung=null; }
-    else { state.composing=null; }
-  } else if (state.committed.length>0) {
-    const last = state.committed.slice(-1);
-    state.committed = state.committed.slice(0,-1);
-    const d = decompose(last);
-    if (d) state.composing = {cho:d.cho, jung:d.jung, jong:null, jongIdx:0};
+function inputDelete(){
+  if(state.composing){
+    const c=state.composing;
+    if(c.jong){
+      if(JONGSUNG_SPLIT[c.jong]){c.jong=JONGSUNG_SPLIT[c.jong][0];c.jongIdx=JONGSUNG_IDX[c.jong];}
+      else{c.jong=null;c.jongIdx=0;}
+    }else if(c.jung){c.jung=null;}
+    else{state.composing=null;}
+  }else if(state.committed.length>0){
+    const last=state.committed.slice(-1);
+    state.committed=state.committed.slice(0,-1);
+    const d=decompose(last);
+    if(d)state.composing={cho:d.cho,jung:d.jung,jong:null,jongIdx:0};
   }
   updateOutput();
-}
-
-function previewChar(cho, vowel) {
-  if (state.composing?.jong) {
-    const jong = state.composing.jong;
-    const movingCho = JONGSUNG_SPLIT[jong] ? JONGSUNG_SPLIT[jong][1] : jong;
-    return compose(movingCho, vowel, 0) || movingCho+vowel;
-  }
-  return compose(cho, vowel, 0) || cho+vowel;
 }
 
 // ============================================================
 // 렌더링
 // ============================================================
-function updateOutput() {
-  document.getElementById('committed').textContent = state.committed;
-  const c = state.composing;
-  document.getElementById('composing').textContent = c
-    ? (c.jung ? (compose(c.cho,c.jung,c.jongIdx||0)||c.cho+c.jung) : c.cho)
-    : '';
+function updateOutput(){
+  document.getElementById('committed').textContent=state.committed;
+  const c=state.composing;
+  document.getElementById('composing').textContent=c
+    ?(c.jung?(compose(c.cho,c.jung,c.jongIdx||0)||(c.cho+c.jung)):c.cho):'';
+  updateWordBar();
 }
-function showBigPreview(ch) {
-  const el = document.getElementById('big-preview');
-  el.textContent = ch;
-  el.style.display = ch ? 'block' : 'none';
-}
-function updateStatus(msg) {
-  document.getElementById('status').textContent = msg;
-}
-
+function showBigPreview(ch){const el=document.getElementById('big-preview');el.textContent=ch;el.style.display=ch?'block':'none';}
+function updateStatus(msg){document.getElementById('status').textContent=msg;}
 updateOutput();
 </script>
 </body>
