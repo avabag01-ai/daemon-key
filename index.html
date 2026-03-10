@@ -12,7 +12,6 @@ body {
   display: flex; flex-direction: column; align-items: center;
   height: 100dvh; overflow: hidden; touch-action: none;
 }
-
 #output {
   width: 100%; max-width: 500px; flex: 1;
   background: #0d1220; padding: 16px;
@@ -21,10 +20,8 @@ body {
 }
 #output .composing { border-bottom: 2px solid #e94560; color: #e94560; }
 
-/* 단어 예측 바 */
 #word-bar {
-  width: 100%; max-width: 500px;
-  height: 40px; min-height: 40px;
+  width: 100%; max-width: 500px; height: 40px; min-height: 40px;
   background: #0d1628; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540;
   display: flex; align-items: center; gap: 2px;
   overflow-x: auto; overflow-y: hidden; padding: 0 6px;
@@ -36,88 +33,80 @@ body {
   background: #182238; border: 1px solid #253050; border-radius: 6px;
   font-size: 15px; color: #7aaeff; display: flex; align-items: center;
   cursor: pointer; white-space: nowrap;
-  transition: background 0.08s, color 0.08s;
 }
-.word-candidate:active { background: #1e3a70; color: #fff; }
-
 #status {
   width: 100%; max-width: 500px; height: 22px;
   font-size: 11px; color: #334; text-align: center; line-height: 22px;
   background: #0d1220;
 }
-
 #keyboard {
   width: 100%; max-width: 500px;
   padding: 6px 4px 10px; background: #151c2e;
   display: flex; flex-direction: column; gap: 5px;
 }
 .key-row { display: flex; gap: 5px; justify-content: center; }
-
 .key {
-  flex: 1; height: 58px;
+  flex: 1; height: 54px;
   background: #1c2640; border: 1px solid #252f4a; border-radius: 10px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-size: 21px; color: #ccc;
   position: relative; cursor: pointer; touch-action: none;
   transition: background 0.06s, border-color 0.06s, transform 0.06s;
 }
-.key.active-cho {
-  background: #c0283e !important; border-color: #e94560 !important;
-  color: white !important; transform: scale(0.94); z-index: 5;
+/* 한글 자음 (큰 글자) */
+.key .ko { font-size: 20px; color: #ccc; line-height: 1; }
+/* 영어 힌트 (작은 글자, 오른쪽 위) */
+.key .en-hint {
+  position: absolute; top: 4px; right: 5px;
+  font-size: 9px; color: #2a5090; font-weight: bold; line-height: 1;
 }
-.key.special { font-size: 13px; color: #445; background: #0f1520; border-color: #1a2035; }
-
-/* 방사형 모음 버블 */
-#vowel-layer {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 60;
+/* 순수 영어 전용 키 (자음 없음) */
+.key .en-only { font-size: 16px; color: #2a5090; line-height: 1; }
+/* 쌍자음 힌트 */
+.key .dbl-hint {
+  position: absolute; top: 3px; left: 5px;
+  font-size: 8px; color: #223; line-height: 1;
 }
+.key.special { background: #0f1520; border-color: #1a2035; }
+.key.special .ko { font-size: 13px; color: #445; }
+/* 활성 상태 */
+.key.active-cho { background: #c0283e !important; border-color: #e94560 !important; transform: scale(0.94); z-index:5; }
+.key.active-cho .ko { color: #fff !important; }
+/* 영어 스와이프 하이라이트 */
+.key.en-lit { background: #0a2550 !important; border-color: #3a7fff !important; }
+.key.en-lit .en-hint, .key.en-lit .en-only { color: #7af !important; }
 
+/* 방사형 버블 */
+#vowel-layer { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:60; }
 .vowel-bubble {
-  position: absolute;
-  width: 46px; height: 46px;
-  background: #0e1e3a; border: 1.5px solid #1a3a6a;
-  border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  transition: background 0.08s, border-color 0.08s, transform 0.08s;
+  position:absolute; width:46px; height:46px;
+  background:#0e1e3a; border:1.5px solid #1a3a6a; border-radius:50%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transform:translate(-50%,-50%); pointer-events:none;
+  transition:background 0.08s,border-color 0.08s,transform 0.08s;
 }
-.vowel-bubble .v-char { font-size: 17px; color: #5a8aee; line-height: 1; }
-.vowel-bubble .v-merged { font-size: 9px; color: #2a4a6a; margin-top: 1px; }
-
-.vowel-bubble.near {
-  width: 52px; height: 52px;
-}
-.vowel-bubble.near .v-char { font-size: 19px; }
-
+.vowel-bubble .v-char { font-size:17px; color:#5a8aee; line-height:1; }
+.vowel-bubble .v-merged { font-size:9px; color:#2a4a6a; margin-top:1px; }
+.vowel-bubble.near { width:52px; height:52px; }
+.vowel-bubble.near .v-char { font-size:19px; }
 .vowel-bubble.highlighted {
-  background: #1a4a8a !important; border-color: #4a8fff !important;
-  transform: translate(-50%, -50%) scale(1.2) !important;
-  box-shadow: 0 0 18px rgba(74,143,255,0.6);
+  background:#1a4a8a !important; border-color:#4a8fff !important;
+  transform:translate(-50%,-50%) scale(1.2) !important;
+  box-shadow:0 0 18px rgba(74,143,255,0.6);
 }
-.vowel-bubble.highlighted .v-char { color: #fff !important; font-size: 21px; }
-.vowel-bubble.highlighted .v-merged { color: rgba(255,255,255,0.7) !important; }
-
-/* 큰 미리보기 */
+.vowel-bubble.highlighted .v-char { color:#fff !important; font-size:21px; }
+.vowel-bubble.highlighted .v-merged { color:rgba(255,255,255,0.7) !important; }
 #big-preview {
-  position: fixed; top: 33%; left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 140px; color: rgba(233,69,96,0.16);
-  font-weight: bold; pointer-events: none; z-index: 50; display: none;
+  position:fixed; top:33%; left:50%; transform:translate(-50%,-50%);
+  font-size:140px; color:rgba(233,69,96,0.16); font-weight:bold;
+  pointer-events:none; z-index:50; display:none;
 }
-
-/* 궤적 캔버스 */
-#trail-canvas {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 40;
-}
+#trail-canvas { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:40; }
 </style>
 </head>
 <body>
 <div id="output"><span id="committed"></span><span class="composing" id="composing"></span></div>
 <div id="word-bar"></div>
-<div id="status">자음 누르고 모음까지 긁으세요</div>
+<div id="status">자음+모음=한글 / 영어는 키 위에서 쭉 그으세요</div>
 <div id="keyboard"></div>
 <div id="vowel-layer"></div>
 <div id="big-preview"></div>
@@ -140,184 +129,175 @@ function decompose(ch){const code=ch.charCodeAt(0)-0xAC00;if(code<0||code>11171)
 
 // ============================================================
 // 모음 배치 — 방사형
-// angle(도), dist(가까움=1, 멀=2,3), vowel
-// 가까운 것 = 자주 쓰는 기본 모음
-// 먼 것 = 복합/희귀 모음
 // ============================================================
 const VOWEL_LAYOUT = [
-  // 1단계 (가까움, dist=1) — 기본 6모음
-  { angle:  0,  dist:1, v:'ㅗ' },   // 위
-  { angle: 180, dist:1, v:'ㅜ' },   // 아래
-  { angle:  90, dist:1, v:'ㅏ' },   // 오른
-  { angle: 270, dist:1, v:'ㅓ' },   // 왼
-  { angle:  45, dist:1, v:'ㅣ' },   // 우상
-  { angle: 225, dist:1, v:'ㅡ' },   // 좌하
-
-  // 2단계 (중간, dist=2) — 획추가 모음 + ㅐ ㅔ
-  { angle:  0,  dist:2, v:'ㅛ' },   // 위 멀리
-  { angle: 180, dist:2, v:'ㅠ' },   // 아래 멀리
-  { angle:  90, dist:2, v:'ㅑ' },   // 오른 멀리
-  { angle: 270, dist:2, v:'ㅕ' },   // 왼 멀리
-  { angle: 315, dist:2, v:'ㅐ' },   // 좌상
-  { angle: 135, dist:2, v:'ㅔ' },   // 우하
-
-  // 3단계 (멀리, dist=3) — 복합모음
-  { angle:  60, dist:2, v:'ㅘ' },   // 위+오른
-  { angle: 240, dist:2, v:'ㅝ' },   // 아래+왼
-  { angle:  30, dist:3, v:'ㅚ' },   // ↑+↗
-  { angle: 210, dist:3, v:'ㅟ' },   // ↓+↙
-  { angle: 315, dist:3, v:'ㅒ' },   // 좌상 멀리
-  { angle: 135, dist:3, v:'ㅖ' },   // 우하 멀리
-  { angle:  75, dist:3, v:'ㅙ' },   // ↑↖
-  { angle: 255, dist:3, v:'ㅞ' },   // ↓↖
-  { angle:  45, dist:3, v:'ㅢ' },   // ↗ 멀리
+  {angle:0,  dist:1,v:'ㅗ'}, {angle:180,dist:1,v:'ㅜ'},
+  {angle:90, dist:1,v:'ㅏ'}, {angle:270,dist:1,v:'ㅓ'},
+  {angle:45, dist:1,v:'ㅣ'}, {angle:225,dist:1,v:'ㅡ'},
+  {angle:0,  dist:2,v:'ㅛ'}, {angle:180,dist:2,v:'ㅠ'},
+  {angle:90, dist:2,v:'ㅑ'}, {angle:270,dist:2,v:'ㅕ'},
+  {angle:315,dist:2,v:'ㅐ'}, {angle:135,dist:2,v:'ㅔ'},
+  {angle:60, dist:2,v:'ㅘ'}, {angle:240,dist:2,v:'ㅝ'},
+  {angle:30, dist:3,v:'ㅚ'}, {angle:210,dist:3,v:'ㅟ'},
+  {angle:315,dist:3,v:'ㅒ'}, {angle:135,dist:3,v:'ㅖ'},
+  {angle:75, dist:3,v:'ㅙ'}, {angle:255,dist:3,v:'ㅞ'},
+  {angle:45, dist:3,v:'ㅢ'},
 ];
-
-// dist별 픽셀 반경
-const DIST_R = { 1: 68, 2: 115, 3: 158 };
+const DIST_R = {1:68, 2:115, 3:158};
 
 // ============================================================
-// 레이아웃
+// 레이아웃 정의
+// 각 키: { ko: 한글자음(없으면null), en: 영어알파벳, type: 'normal'|'special' }
 // ============================================================
+// 자음 16개 → 영어 a~p (순서대로)
+// 나머지 10자리: q~z (10개)
 const LAYOUT_ROWS = [
-  ['ㄱ','ㄴ','ㄷ','ㄹ'],
-  ['ㅁ','ㅂ','ㅅ','ㅇ'],
-  ['ㅈ','ㅊ','ㅋ','ㅌ'],
-  ['ㅍ','ㅎ','.','DEL'],
-  ['SPC','SPC','SPC','SPC'],
+  [ {ko:'ㄱ',en:'a'}, {ko:'ㄴ',en:'b'}, {ko:'ㄷ',en:'c'}, {ko:'ㄹ',en:'d'} ],
+  [ {ko:'ㅁ',en:'e'}, {ko:'ㅂ',en:'f'}, {ko:'ㅅ',en:'g'}, {ko:'ㅇ',en:'h'} ],
+  [ {ko:'ㅈ',en:'i'}, {ko:'ㅊ',en:'j'}, {ko:'ㅋ',en:'k'}, {ko:'ㅌ',en:'l'} ],
+  [ {ko:'ㅍ',en:'m'}, {ko:'ㅎ',en:'n'}, {ko:null,en:'o'}, {ko:null,en:'p'} ],
+  [ {ko:null,en:'q'}, {ko:null,en:'r'}, {ko:null,en:'s'}, {ko:null,en:'t'} ],
+  [ {ko:null,en:'u'}, {ko:null,en:'v'}, {ko:null,en:'w'}, {ko:null,en:'x'} ],
+  [ {ko:null,en:'y'}, {ko:null,en:'z'}, {ko:'.',en:'.',type:'punct'}, {ko:'DEL',en:'DEL',type:'del'} ],
+  [ {ko:'SPC',en:'SPC',type:'spc'}, {ko:'SPC',en:'SPC',type:'spc'}, {ko:'SPC',en:'SPC',type:'spc'}, {ko:'SPC',en:'SPC',type:'spc'} ],
 ];
-const DOUBLE_CHO={'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
+const DOUBLE_CHO = {'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
 
 // ============================================================
-// 단어 예측 — localStorage 기반
-// wordFreq: { "단어": 빈도수 }
+// 단어 예측
 // ============================================================
 let wordFreq = {};
 try { wordFreq = JSON.parse(localStorage.getItem('dk_wordFreq')||'{}'); } catch(e){}
-
-function saveWordFreq() {
-  try { localStorage.setItem('dk_wordFreq', JSON.stringify(wordFreq)); } catch(e){}
-}
-
-// 스페이스/엔터 시 현재 단어 기록
-function recordWord(word) {
-  word = word.trim();
-  if(!word || word.length < 2) return; // 1글자 이하 무시
-  wordFreq[word] = (wordFreq[word]||0) + 1;
+function saveWordFreq(){try{localStorage.setItem('dk_wordFreq',JSON.stringify(wordFreq));}catch(e){}}
+function recordWord(word){
+  word=word.trim();
+  if(!word||word.length<2)return;
+  wordFreq[word]=(wordFreq[word]||0)+1;
   saveWordFreq();
 }
-
-// 현재 커밋+컴포징 텍스트에서 마지막 단어 추출
-function getCurrentWord() {
-  const c = state.composing;
-  const composingStr = c ? (c.jung?(compose(c.cho,c.jung,c.jongIdx||0)||(c.cho+c.jung)):c.cho) : '';
-  const full = state.committed + composingStr;
-  // 마지막 스페이스 이후가 현재 단어
-  const lastSpace = full.lastIndexOf(' ');
-  return full.slice(lastSpace+1);
+function getCurrentWord(){
+  const c=state.composing;
+  const cs=c?(c.jung?(compose(c.cho,c.jung,c.jongIdx||0)||(c.cho+c.jung)):c.cho):'';
+  const full=state.committed+cs+(enSwipe.active?enSwipe.word:'');
+  const ls=full.lastIndexOf(' ');
+  return full.slice(ls+1);
 }
-
-// 현재 입력 prefix 기준 매칭 후보 (빈도순, 최대 10개)
-// cur이 완성형 한글 글자로 시작하는 단어 찾기
-function getCandidates() {
-  const cur = getCurrentWord();
-  if(cur.length < 1) return [];
+function getCandidates(){
+  const cur=getCurrentWord();
+  if(cur.length<1)return[];
   return Object.entries(wordFreq)
-    .filter(([w]) => w.startsWith(cur) && w.length > cur.length)
-    .sort((a,b) => b[1]-a[1])
-    .slice(0,10)
-    .map(([w]) => w);
+    .filter(([w])=>w.startsWith(cur)&&w.length>cur.length)
+    .sort((a,b)=>b[1]-a[1]).slice(0,10).map(([w])=>w);
 }
-
-function updateWordBar() {
-  const bar = document.getElementById('word-bar');
-  const candidates = getCandidates();
-  bar.innerHTML = '';
-  candidates.forEach(word => {
-    const el = document.createElement('div');
-    el.className = 'word-candidate';
-    el.textContent = word;
-    let _sx=0, _sy=0, _moved=false;
-    el.addEventListener('pointerdown', e => { _sx=e.clientX; _sy=e.clientY; _moved=false; });
-    el.addEventListener('pointermove', e => { if(Math.hypot(e.clientX-_sx,e.clientY-_sy)>10) _moved=true; });
-    el.addEventListener('pointerup', e => { if(!_moved) applyCandidate(word); });
+function updateWordBar(){
+  const bar=document.getElementById('word-bar');
+  // 영어 스와이프 중이면 현재 글자 표시
+  let extra=[];
+  if(enSwipe.active&&enSwipe.word) extra=[enSwipe.word];
+  const candidates=[...extra,...getCandidates()].slice(0,10);
+  bar.innerHTML='';
+  candidates.forEach((word,idx)=>{
+    const el=document.createElement('div');
+    el.className='word-candidate';
+    if(idx===0&&enSwipe.active) el.style.color='#ffcc44';
+    el.textContent=word;
+    let _sx=0,_sy=0,_moved=false;
+    el.addEventListener('pointerdown',e=>{_sx=e.clientX;_sy=e.clientY;_moved=false;});
+    el.addEventListener('pointermove',e=>{if(Math.hypot(e.clientX-_sx,e.clientY-_sy)>10)_moved=true;});
+    el.addEventListener('pointerup',e=>{if(!_moved)applyCandidate(word);});
     bar.appendChild(el);
   });
 }
-
-// 후보 선택 → 현재 단어 교체
-function applyCandidate(word) {
-  const cur = getCurrentWord();
-  // 현재 단어만큼 뒤로 지우고 word 삽입
-  // commitComposing 처리 후 state.committed 끝에서 cur 제거
-  if(state.composing) { commitComposing(); }
-  // committed 끝에서 cur 제거
-  if(state.committed.endsWith(cur)) {
-    state.committed = state.committed.slice(0, state.committed.length - cur.length);
-  }
-  state.committed += word;
+function applyCandidate(word){
+  const cur=getCurrentWord();
+  commitComposing();
+  enSwipe={active:false,keys:[],word:''};
+  clearEnLit();
+  if(state.committed.endsWith(cur))
+    state.committed=state.committed.slice(0,state.committed.length-cur.length);
+  state.committed+=word;
   recordWord(word);
-  state.composing = null;
+  state.composing=null;
   updateOutput();
-  updateWordBar();
 }
 
 // ============================================================
 // 상태
 // ============================================================
 let state={committed:'',composing:null};
-let drag={active:false,cho:null,choEl:null,
-  startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+let drag={active:false,cho:null,choEl:null,startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
 let lastTap={key:null,time:0};
+// 영어 스와이프 상태
+let enSwipe={active:false,keys:[],word:''};
+// 영어 키 위치 캐시: {letter -> {el,cx,cy,hw,hh}}
+let enKeyPos={};
 
 // ============================================================
-// DOM
+// DOM 빌드
 // ============================================================
 const kbEl=document.getElementById('keyboard');
 const vowelLayer=document.getElementById('vowel-layer');
-const allKeyEls=[];
+let allKeyEls=[];
 
-const PUNCT_KEYS = {
-  '.': ['.', ',', '!', '?', '…'],   // 탭: 마침표, 길게누르면 나머지
-  ',': [',', '.', '!', '?'],
-};
-// 구두점 키 탭 → 첫번째 문자, 추후 확장 가능
+function buildKeyboard(){
+  kbEl.innerHTML=''; allKeyEls=[]; enKeyPos={};
 
-LAYOUT_ROWS.forEach((row, rowIdx)=>{
-  const rowEl=document.createElement('div');
-  rowEl.className='key-row';
+  LAYOUT_ROWS.forEach(row=>{
+    const rowEl=document.createElement('div');
+    rowEl.className='key-row';
 
-  // 마지막 행(스페이스)은 키 하나로 병합
-  if(row.every(k=>k==='SPC')){
-    const el=document.createElement('div');
-    el.className='key special'; el.dataset.key='SPC';
-    el.style.flex='1'; el.textContent='space';
-    rowEl.appendChild(el); allKeyEls.push({el,defaultKey:'SPC'});
-    kbEl.appendChild(rowEl); return;
-  }
-
-  row.forEach(k=>{
-    const el=document.createElement('div');
-    el.className='key'; el.dataset.key=k;
-    if(k==='DEL'){
-      el.classList.add('special'); el.textContent='⌫';
-    } else if(k==='SPC'){
-      el.classList.add('special'); el.textContent='space';
-    } else if(PUNCT_KEYS[k]){
-      el.classList.add('special'); el.textContent=k;
-      el.style.fontSize='20px'; el.style.color='#88aacc';
-    } else {
-      el.textContent=k;
-      if(DOUBLE_CHO[k]){
-        const d=document.createElement('span');
-        d.style.cssText='position:absolute;top:3px;right:4px;font-size:8px;color:#334;';
-        d.textContent=DOUBLE_CHO[k]; el.appendChild(d);
-      }
+    // 스페이스 행: 하나로 병합
+    if(row.every(k=>k.type==='spc')){
+      const el=document.createElement('div');
+      el.className='key special';
+      el.innerHTML='<span class="ko">space</span>';
+      el.style.flex='1';
+      rowEl.appendChild(el); allKeyEls.push({el,item:{type:'spc'}});
+      kbEl.appendChild(rowEl); return;
     }
-    rowEl.appendChild(el); allKeyEls.push({el,defaultKey:k});
+
+    row.forEach(item=>{
+      const el=document.createElement('div');
+      el.className='key';
+
+      if(item.type==='del'){
+        el.classList.add('special');
+        el.innerHTML='<span class="ko">⌫</span>';
+      } else if(item.type==='spc'){
+        el.classList.add('special');
+        el.innerHTML='<span class="ko">space</span>';
+      } else if(item.type==='punct'){
+        el.classList.add('special');
+        el.innerHTML='<span class="ko" style="font-size:18px;color:#88aacc">.</span>';
+      } else if(item.ko){
+        // 한글 자음 + 영어 힌트
+        let html=`<span class="ko">${item.ko}</span><span class="en-hint">${item.en}</span>`;
+        if(DOUBLE_CHO[item.ko]) html=`<span class="dbl-hint">${DOUBLE_CHO[item.ko]}</span>`+html;
+        el.innerHTML=html;
+      } else {
+        // 영어 전용 키 (한글 없음)
+        el.innerHTML=`<span class="en-only">${item.en}</span>`;
+        el.style.background='#141e32';
+        el.style.borderColor='#1a2540';
+      }
+
+      rowEl.appendChild(el);
+      allKeyEls.push({el,item});
+    });
+    kbEl.appendChild(rowEl);
   });
-  kbEl.appendChild(rowEl);
-});
+
+  // 영어 키 위치 캐시 (렌더 후)
+  requestAnimationFrame(()=>{
+    allKeyEls.forEach(({el,item})=>{
+      if(item.en && item.en.length===1 && item.en>='a' && item.en<='z'){
+        const r=el.getBoundingClientRect();
+        enKeyPos[item.en]={el, cx:r.left+r.width/2, cy:r.top+r.height/2, hw:r.width/2, hh:r.height/2};
+      }
+    });
+    bindKeyEvents();
+  });
+}
 
 // ============================================================
 // 캔버스
@@ -325,8 +305,9 @@ LAYOUT_ROWS.forEach((row, rowIdx)=>{
 const canvas=document.getElementById('trail-canvas');
 const ctx=canvas.getContext('2d');
 function resizeCanvas(){canvas.width=innerWidth;canvas.height=innerHeight;}
-resizeCanvas(); window.addEventListener('resize',resizeCanvas);
-function drawTrail(){
+resizeCanvas(); window.addEventListener('resize',()=>{resizeCanvas();buildKeyboard();});
+
+function drawKoTrail(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   const t=drag.trail;
   if(!drag.active||t.length<2)return;
@@ -335,129 +316,199 @@ function drawTrail(){
   ctx.strokeStyle='rgba(233,69,96,0.35)';
   ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
 }
+function drawEnTrail(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const pts=enSwipe.keys.map(k=>enKeyPos[k]).filter(Boolean);
+  if(pts.length<2)return;
+  ctx.beginPath(); ctx.moveTo(pts[0].cx,pts[0].cy);
+  pts.forEach(p=>ctx.lineTo(p.cx,p.cy));
+  ctx.strokeStyle='rgba(80,160,255,0.45)';
+  ctx.lineWidth=4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.stroke();
+}
 
 // ============================================================
-// 방사형 모음 버블 생성/제거
+// 방사형 버블
 // ============================================================
-function showVowelBubbles(cx, cy, cho) {
-  vowelLayer.innerHTML='';
-  drag.bubbles=[];
-
+function showVowelBubbles(cx,cy,cho){
+  vowelLayer.innerHTML=''; drag.bubbles=[];
   VOWEL_LAYOUT.forEach(item=>{
     const rad=item.angle*Math.PI/180;
     const r=DIST_R[item.dist];
-    const bx=cx+Math.cos(rad)*r;
-    const by=cy-Math.sin(rad)*r; // y축 반전 (0도=위)
-
-    // 화면 밖이면 스킵
-    if(bx<20||bx>innerWidth-20||by<20||by>innerHeight-20) return;
-
+    const bx=cx+Math.cos(rad)*r, by=cy-Math.sin(rad)*r;
+    if(bx<20||bx>innerWidth-20||by<20||by>innerHeight-20)return;
     const merged=compose(cho,item.v,0)||(cho+item.v);
-
-    const el=document.createElement('div');
-    el.className='vowel-bubble';
-    if(item.dist===1) el.classList.add('near');
+    const el=document.createElement('div'); el.className='vowel-bubble';
+    if(item.dist===1)el.classList.add('near');
     el.style.left=bx+'px'; el.style.top=by+'px';
-
     const vc=document.createElement('span'); vc.className='v-char'; vc.textContent=item.v;
     const vm=document.createElement('span'); vm.className='v-merged'; vm.textContent=merged;
     el.appendChild(vc); el.appendChild(vm);
-
     vowelLayer.appendChild(el);
-    drag.bubbles.push({el, vowel:item.v, merged, x:bx, y:by, dist:item.dist});
+    drag.bubbles.push({el,vowel:item.v,merged,x:bx,y:by,dist:item.dist});
   });
 }
-
-function hideVowelBubbles(){
-  vowelLayer.innerHTML='';
-  drag.bubbles=[];
-}
-
-// 포인터에서 가장 가까운 버블 찾기
+function hideVowelBubbles(){vowelLayer.innerHTML='';drag.bubbles=[];}
 function findClosestBubble(px,py){
-  // 선택 반경: dist=1→50px, dist=2→55px, dist=3→50px
-  const SELECT_R = {1:50, 2:55, 3:50};
-  let best=null, bestDist=Infinity;
+  const SR={1:50,2:55,3:50};
+  let best=null,bestD=Infinity;
   drag.bubbles.forEach(b=>{
     const d=Math.hypot(px-b.x,py-b.y);
-    const limit=SELECT_R[b.dist]||50;
-    if(d<limit&&d<bestDist){bestDist=d;best=b;}
+    if(d<(SR[b.dist]||50)&&d<bestD){bestD=d;best=b;}
   });
   return best;
 }
 
 // ============================================================
+// 영어 스와이프
+// ============================================================
+function getEnKeyAt(px,py){
+  for(const [letter,pos] of Object.entries(enKeyPos)){
+    if(Math.abs(px-pos.cx)<=pos.hw+6&&Math.abs(py-pos.cy)<=pos.hh+8) return letter;
+  }
+  return null;
+}
+function clearEnLit(){
+  allKeyEls.forEach(({el})=>el.classList.remove('en-lit'));
+}
+function enSwipeMove(px,py){
+  const letter=getEnKeyAt(px,py);
+  if(!letter)return;
+  const last=enSwipe.keys[enSwipe.keys.length-1];
+  if(letter===last)return;
+  enSwipe.keys.push(letter);
+  enSwipe.word=enSwipe.keys.join('');
+  enKeyPos[letter]?.el.classList.add('en-lit');
+  updateStatus('→ '+enSwipe.word);
+  updateWordBar();
+  drawEnTrail();
+}
+function enSwipeEnd(){
+  const word=enSwipe.word;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  clearEnLit();
+  if(word.length>=1){
+    commitComposing();
+    state.committed+=word;
+    if(word.length>=2) recordWord(word);
+  }
+  enSwipe={active:false,keys:[],word:''};
+  updateOutput();
+  updateStatus('자음+모음=한글 / 영어는 키 위에서 쭉 그으세요');
+}
+
+// ============================================================
 // 이벤트
 // ============================================================
-allKeyEls.forEach(({el,defaultKey})=>{
-  el.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    if(defaultKey==='SPC'){inputSpace();return;}
-    if(defaultKey==='DEL'){inputDelete();return;}
-    if(PUNCT_KEYS[defaultKey]){inputPunct(defaultKey);return;}
+function bindKeyEvents(){
+  allKeyEls.forEach(({el,item})=>{
+    el.addEventListener('pointerdown',e=>{
+      e.preventDefault();
+      if(item.type==='spc'){inputSpace();return;}
+      if(item.type==='del'){inputDelete();return;}
+      if(item.type==='punct'){inputPunct('.');return;}
 
-    const now=Date.now();
-    let cho=defaultKey;
-    if(lastTap.key===defaultKey&&now-lastTap.time<320&&DOUBLE_CHO[defaultKey]){
-      cho=DOUBLE_CHO[defaultKey]; lastTap={key:null,time:0};
-    } else { lastTap={key:defaultKey,time:now}; }
+      // 영어 전용 키 or 영어 스와이프 시작
+      // 포인터를 잡고 드래그하면 영어 스와이프
+      // 포인터를 잡고 떼면(이동 없으면) → 한글 자음 탭 or 영어 탭
+      const letter=item.en;
+      const now=Date.now();
 
-    const rect=el.getBoundingClientRect();
-    const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
-    const pt={x:e.clientX,y:e.clientY};
+      // 영어 스와이프 시작 (항상)
+      if(letter&&letter>='a'&&letter<='z'){
+        enSwipe={active:true,keys:[letter],word:letter};
+        el.classList.add('en-lit');
+        el.setPointerCapture(e.pointerId);
+        updateStatus('→ '+letter);
+        updateWordBar();
+      }
 
-    drag={active:true,cho,choEl:el,
-      startX:pt.x,startY:pt.y,currentVowel:null,trail:[pt],bubbles:[]};
+      // 한글 자음 드래그(버블) 시작도 동시에 준비 (모음 버블은 ko 키에서만)
+      if(item.ko&&item.ko.length===1&&item.ko>='ㄱ'){
+        let cho=item.ko;
+        if(lastTap.key===item.ko&&now-lastTap.time<320&&DOUBLE_CHO[item.ko]){
+          cho=DOUBLE_CHO[item.ko]; lastTap={key:null,time:0};
+        } else { lastTap={key:item.ko,time:now}; }
 
-    el.classList.add('active-cho');
-    el.setPointerCapture(e.pointerId);
-
-    // 즉시 모음 버블 표시
-    showVowelBubbles(cx,cy,cho);
-    updateStatus(`${cho}  →  모음 선택`);
+        const rect=el.getBoundingClientRect();
+        const cx=rect.left+rect.width/2, cy=rect.top+rect.height/2;
+        drag={active:true,cho,choEl:el,
+          startX:e.clientX,startY:e.clientY,currentVowel:null,trail:[{x:e.clientX,y:e.clientY}],bubbles:[]};
+        el.classList.add('active-cho');
+        showVowelBubbles(cx,cy,cho);
+      }
+    });
   });
-});
+}
 
 document.addEventListener('pointermove',e=>{
-  if(!drag.active)return;
   const px=e.clientX,py=e.clientY;
-  drag.trail.push({x:px,y:py});
 
-  // 가장 가까운 버블 찾기
-  const closest=findClosestBubble(px,py);
+  // 영어 스와이프 이동
+  if(enSwipe.active) enSwipeMove(px,py);
 
-  // 하이라이트 업데이트
-  drag.bubbles.forEach(b=>b.el.classList.remove('highlighted'));
-  if(closest){
-    closest.el.classList.add('highlighted');
-    drag.currentVowel=closest.vowel;
-    showBigPreview(closest.merged);
-    updateStatus(`${drag.cho} + ${closest.vowel} = ${closest.merged}`);
-  } else {
-    drag.currentVowel=null;
-    showBigPreview('');
-    updateStatus(`${drag.cho}  →  모음 선택`);
+  // 한글 드래그 이동
+  if(drag.active){
+    drag.trail.push({x:px,y:py});
+    const closest=findClosestBubble(px,py);
+    drag.bubbles.forEach(b=>b.el.classList.remove('highlighted'));
+    if(closest){
+      closest.el.classList.add('highlighted');
+      drag.currentVowel=closest.vowel;
+      showBigPreview(closest.merged);
+      updateStatus(`${drag.cho} + ${closest.vowel} = ${closest.merged}`);
+    } else {
+      drag.currentVowel=null;
+      showBigPreview('');
+    }
+    drawKoTrail();
   }
-
-  drawTrail();
 });
 
 document.addEventListener('pointerup',e=>{
-  if(!drag.active)return;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  showBigPreview('');
-  hideVowelBubbles();
-  drag.choEl?.classList.remove('active-cho');
+  const moved=drag.active&&Math.hypot(e.clientX-drag.startX,e.clientY-drag.startY)>8;
+  const enMoved=enSwipe.active&&enSwipe.keys.length>1;
 
-  if(drag.currentVowel){
-    inputConsonantVowel(drag.cho,drag.currentVowel);
-  } else {
-    inputConsonantOnly(drag.cho);
+  // 영어: 키를 지나간 게 있으면 영어 스와이프 완료, 없으면 영어 탭(단일 글자)
+  if(enSwipe.active){
+    if(enMoved){
+      // 드래그로 영어 단어 입력
+      enSwipeEnd();
+    } else {
+      // 단일 탭 — 한글 자음 있는 키: 한글 처리, 영어 전용 키: 영어 글자 입력
+      clearEnLit();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      enSwipe={active:false,keys:[],word:''};
+      if(drag.active){
+        // 한글 자음 키를 탭 → 모음 없이 자음만
+        hideVowelBubbles();
+        drag.choEl?.classList.remove('active-cho');
+        showBigPreview('');
+        inputConsonantOnly(drag.cho);
+        drag={active:false,cho:null,choEl:null,startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+      } else {
+        // 영어 전용 키 탭 → 영어 글자 하나
+        const letter=enSwipe.word||'';
+        if(letter) { commitComposing(); state.committed+=letter; updateOutput(); }
+      }
+    }
+    updateStatus('자음+모음=한글 / 영어는 키 위에서 쭉 그으세요');
+    return;
   }
 
-  drag={active:false,cho:null,choEl:null,
-    startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
-  updateStatus('자음 누르고 모음까지 긁으세요');
+  // 순수 한글 드래그
+  if(drag.active){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    showBigPreview('');
+    hideVowelBubbles();
+    drag.choEl?.classList.remove('active-cho');
+    if(drag.currentVowel){
+      inputConsonantVowel(drag.cho,drag.currentVowel);
+    } else {
+      inputConsonantOnly(drag.cho);
+    }
+    drag={active:false,cho:null,choEl:null,startX:0,startY:0,currentVowel:null,trail:[],bubbles:[]};
+    updateStatus('자음+모음=한글 / 영어는 키 위에서 쭉 그으세요');
+  }
 });
 
 // ============================================================
@@ -476,7 +527,6 @@ function inputConsonantOnly(cho){
   }
   updateOutput();
 }
-
 function inputConsonantVowel(cho,vowel){
   if(!state.composing){state.composing={cho,jung:vowel,jong:null,jongIdx:0};}
   else if(!state.composing.jung){
@@ -496,13 +546,7 @@ function inputConsonantVowel(cho,vowel){
   }
   updateOutput();
 }
-
-function inputPunct(ch){
-  commitComposing();
-  state.committed+=ch;
-  updateOutput();
-}
-
+function inputPunct(ch){commitComposing();state.committed+=ch;updateOutput();}
 function commitComposing(){
   if(!state.composing)return;
   const c=state.composing;
@@ -510,14 +554,19 @@ function commitComposing(){
   state.composing=null;
 }
 function inputSpace(){
-  // 스페이스 전에 현재 단어 기록
-  const word = getCurrentWord();
+  const word=getCurrentWord();
   commitComposing();
-  recordWord(word || getCurrentWord());
+  recordWord(word);
   state.committed+=' ';
   updateOutput();
 }
 function inputDelete(){
+  if(enSwipe.active&&enSwipe.word.length>0){
+    enSwipe.keys.pop();
+    enSwipe.word=enSwipe.keys.join('');
+    updateWordBar();
+    return;
+  }
   if(state.composing){
     const c=state.composing;
     if(c.jong){
@@ -546,6 +595,8 @@ function updateOutput(){
 }
 function showBigPreview(ch){const el=document.getElementById('big-preview');el.textContent=ch;el.style.display=ch?'block':'none';}
 function updateStatus(msg){document.getElementById('status').textContent=msg;}
+
+buildKeyboard();
 updateOutput();
 </script>
 </body>
