@@ -193,7 +193,6 @@ const DOUBLE_CHO={'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
 // ============================================================
 let wordFreq = {};
 try { wordFreq = JSON.parse(localStorage.getItem('dk_wordFreq')||'{}'); } catch(e){}
-let currentWordBuf = ''; // 현재 입력 중인 단어 누적 버퍼 (스페이스 기준으로 분리)
 
 function saveWordFreq() {
   try { localStorage.setItem('dk_wordFreq', JSON.stringify(wordFreq)); } catch(e){}
@@ -217,16 +216,16 @@ function getCurrentWord() {
   return full.slice(lastSpace+1);
 }
 
-// 첫 글자 기준 매칭 후보 (빈도순 정렬, 최대 10개)
+// 현재 입력 prefix 기준 매칭 후보 (빈도순, 최대 10개)
+// cur이 완성형 한글 글자로 시작하는 단어 찾기
 function getCandidates() {
   const cur = getCurrentWord();
-  if(!cur) return [];
-  const candidates = Object.entries(wordFreq)
-    .filter(([w]) => w.startsWith(cur) && w !== cur)
+  if(cur.length < 1) return [];
+  return Object.entries(wordFreq)
+    .filter(([w]) => w.startsWith(cur) && w.length > cur.length)
     .sort((a,b) => b[1]-a[1])
     .slice(0,10)
     .map(([w]) => w);
-  return candidates;
 }
 
 function updateWordBar() {
@@ -237,9 +236,11 @@ function updateWordBar() {
     const el = document.createElement('div');
     el.className = 'word-candidate';
     el.textContent = word;
-    el.addEventListener('pointerdown', e => {
-      e.preventDefault();
-      applyCandidate(word);
+    // pointerdown 위치 기록 → pointerup 시 이동 적으면 탭으로 처리
+    let startX = 0, startY = 0;
+    el.addEventListener('pointerdown', e => { startX=e.clientX; startY=e.clientY; });
+    el.addEventListener('pointerup', e => {
+      if(Math.hypot(e.clientX-startX, e.clientY-startY) < 15) applyCandidate(word);
     });
     bar.appendChild(el);
   });
