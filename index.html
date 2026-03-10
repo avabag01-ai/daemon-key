@@ -183,7 +183,8 @@ const LAYOUT_ROWS = [
   ['ㄱ','ㄴ','ㄷ','ㄹ'],
   ['ㅁ','ㅂ','ㅅ','ㅇ'],
   ['ㅈ','ㅊ','ㅋ','ㅌ'],
-  ['ㅍ','ㅎ','SPC','DEL'],
+  ['ㅍ','ㅎ','.','DEL'],
+  ['SPC','SPC','SPC','SPC'],
 ];
 const DOUBLE_CHO={'ㄱ':'ㄲ','ㄷ':'ㄸ','ㅂ':'ㅃ','ㅅ':'ㅆ','ㅈ':'ㅉ'};
 
@@ -236,12 +237,10 @@ function updateWordBar() {
     const el = document.createElement('div');
     el.className = 'word-candidate';
     el.textContent = word;
-    // pointerdown 위치 기록 → pointerup 시 이동 적으면 탭으로 처리
-    let startX = 0, startY = 0;
-    el.addEventListener('pointerdown', e => { startX=e.clientX; startY=e.clientY; });
-    el.addEventListener('pointerup', e => {
-      if(Math.hypot(e.clientX-startX, e.clientY-startY) < 15) applyCandidate(word);
-    });
+    let _sx=0, _sy=0, _moved=false;
+    el.addEventListener('pointerdown', e => { _sx=e.clientX; _sy=e.clientY; _moved=false; });
+    el.addEventListener('pointermove', e => { if(Math.hypot(e.clientX-_sx,e.clientY-_sy)>10) _moved=true; });
+    el.addEventListener('pointerup', e => { if(!_moved) applyCandidate(word); });
     bar.appendChild(el);
   });
 }
@@ -278,14 +277,36 @@ const kbEl=document.getElementById('keyboard');
 const vowelLayer=document.getElementById('vowel-layer');
 const allKeyEls=[];
 
-LAYOUT_ROWS.forEach(row=>{
+const PUNCT_KEYS = {
+  '.': ['.', ',', '!', '?', '…'],   // 탭: 마침표, 길게누르면 나머지
+  ',': [',', '.', '!', '?'],
+};
+// 구두점 키 탭 → 첫번째 문자, 추후 확장 가능
+
+LAYOUT_ROWS.forEach((row, rowIdx)=>{
   const rowEl=document.createElement('div');
   rowEl.className='key-row';
+
+  // 마지막 행(스페이스)은 키 하나로 병합
+  if(row.every(k=>k==='SPC')){
+    const el=document.createElement('div');
+    el.className='key special'; el.dataset.key='SPC';
+    el.style.flex='1'; el.textContent='space';
+    rowEl.appendChild(el); allKeyEls.push({el,defaultKey:'SPC'});
+    kbEl.appendChild(rowEl); return;
+  }
+
   row.forEach(k=>{
     const el=document.createElement('div');
     el.className='key'; el.dataset.key=k;
-    if(k==='SPC'||k==='DEL'){el.classList.add('special');el.textContent=k==='SPC'?'space':'⌫';}
-    else{
+    if(k==='DEL'){
+      el.classList.add('special'); el.textContent='⌫';
+    } else if(k==='SPC'){
+      el.classList.add('special'); el.textContent='space';
+    } else if(PUNCT_KEYS[k]){
+      el.classList.add('special'); el.textContent=k;
+      el.style.fontSize='20px'; el.style.color='#88aacc';
+    } else {
       el.textContent=k;
       if(DOUBLE_CHO[k]){
         const d=document.createElement('span');
@@ -373,6 +394,7 @@ allKeyEls.forEach(({el,defaultKey})=>{
     e.preventDefault();
     if(defaultKey==='SPC'){inputSpace();return;}
     if(defaultKey==='DEL'){inputDelete();return;}
+    if(PUNCT_KEYS[defaultKey]){inputPunct(defaultKey);return;}
 
     const now=Date.now();
     let cho=defaultKey;
@@ -472,6 +494,12 @@ function inputConsonantVowel(cho,vowel){
     state.committed+=prev||(state.composing.cho+state.composing.jung);
     state.composing={cho:movingCho,jung:vowel,jong:null,jongIdx:0};
   }
+  updateOutput();
+}
+
+function inputPunct(ch){
+  commitComposing();
+  state.committed+=ch;
   updateOutput();
 }
 
