@@ -692,7 +692,7 @@ void CloseAllLong(string reason, bool is_win)
       total_pnl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
       if(!g_trade.PositionClose(ticket))
       {
-         PrintFormat("  청산실패 ticket=%llu err=%u", ticket, g_trade.ResultRetcode());
+         PrintFormat("  청산실패 ticket=%I64u err=%u", ticket, g_trade.ResultRetcode());
          close_fail++;
       }
    }
@@ -742,7 +742,7 @@ void CloseAllShort(string reason, bool is_win)
       total_pnl += PositionGetDouble(POSITION_PROFIT) + PositionGetDouble(POSITION_SWAP);
       if(!g_trade.PositionClose(ticket))
       {
-         PrintFormat("  청산실패 ticket=%llu err=%u", ticket, g_trade.ResultRetcode());
+         PrintFormat("  청산실패 ticket=%I64u err=%u", ticket, g_trade.ResultRetcode());
          close_fail++;
       }
    }
